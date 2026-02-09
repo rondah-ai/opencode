@@ -108,19 +108,24 @@ async function main() {
       args: ['--no-sandbox', '--disable-setuid-sandbox'] // CI-friendly
     });
 
-    // Bypass Vercel deployment protection if secret is provided
-    const extraHTTPHeaders = {};
-    if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
-      extraHTTPHeaders['x-vercel-protection-bypass'] = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-      extraHTTPHeaders['x-vercel-set-bypass-cookie'] = 'samesitenone';
-      console.log('🔑 Vercel deployment protection bypass enabled');
-    }
-
     context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
       ignoreHTTPSErrors: true,
-      extraHTTPHeaders,
     });
+
+    // Bypass Vercel deployment protection via cookie (domain-scoped so it won't interfere with third-party APIs like Firebase Auth)
+    if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+      const url = new URL(config.url);
+      await context.addCookies([{
+        name: '__vercel_protection_bypass',
+        value: process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+        domain: url.hostname,
+        path: '/',
+        sameSite: 'None',
+        secure: true,
+      }]);
+      console.log('🔑 Vercel deployment protection bypass enabled (cookie)');
+    }
 
     page = await context.newPage();
     console.log('✅ Browser ready\n');
