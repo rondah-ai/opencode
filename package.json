@@ -1,0 +1,43 @@
+{
+  "name": "@rondah-ai/qa-agent",
+  "version": "1.0.0",
+  "description": "Automated QA testing agent with blueprint-based testing",
+  "main": "index.js",
+  "bin": {
+    "qa-agent": "./bin/qa-agent.js"
+  },
+  "scripts": {
+    "test": "node scripts/run-qa-ci.js",
+    "test:smoke": "node scripts/run-qa-ci.js --suite smoke",
+    "test:regression": "node scripts/run-qa-ci.js --suite regression",
+    "test:critical": "node scripts/run-qa-ci.js --suite critical",
+    "test:hybrid": "node scripts/run-qa-hybrid.cjs --mode hybrid",
+    "test:hybrid:smoke": "node scripts/run-qa-hybrid.cjs --suite smoke --mode hybrid",
+    "test:ai": "node scripts/run-qa-ai-only.cjs",
+    "test:unified": "node scripts/run-qa-unified.cjs"
+  },
+  "keywords": [
+    "qa",
+    "testing",
+    "automation",
+    "playwright",
+    "e2e",
+    "integration-testing"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rondah-ai/opencode"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "dependencies": {
+    "playwright": "^1.57.0",
+    "zod": "^4.1.8",
+    "@anthropic-ai/sdk": "^0.20.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

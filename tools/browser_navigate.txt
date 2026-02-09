@@ -1,0 +1,12 @@
+Navigate to a URL in a headless browser and return page information.
+
+Use this tool to:
+- Open web pages for QA testing
+- Verify pages load correctly
+- Get page title and metadata
+- Check HTTP status codes
+- Detect redirects
+
+The browser will wait for the specified event (load, domcontentloaded, or networkidle) before returning results.
+
+Returns page title, final URL (after redirects), and HTTP status code.

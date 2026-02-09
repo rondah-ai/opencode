@@ -1,0 +1,58 @@
+Compose dynamic test scenarios by intelligently combining multiple flows.
+
+This tool acts as a test planner that analyzes your testing requirements and automatically selects the appropriate flows from QA_FLOWS.json to create a comprehensive test plan.
+
+How it works:
+1. Analyzes your test description using keywords and intent
+2. Matches against available flows in the flows library
+3. Auto-includes prerequisites (e.g., login flows)
+4. Sequences flows in logical order
+5. Provides execution plan with timing estimates
+
+Matching Strategies:
+- Test categories (smoke, regression, critical path)
+- Feature keywords (call logs, appointments, dashboard)
+- Action verbs (view, add, edit, delete, search, filter)
+- Composite journeys (end-to-end workflows)
+- CRUD operations (comprehensive feature testing)
+
+Parameters:
+- testDescription: What you want to test in natural language
+- includeLogin: Auto-add login flow if needed (default: true)
+- maxFlows: Limit number of flows (default: 10)
+- priorityFilter: Filter by priority level (critical/high/medium/low/all)
+
+Example Queries:
+
+Test Categories:
+- "smoke tests" → Runs all smoke testing flows
+- "critical path" → Runs all critical path flows
+- "regression tests" → Runs full regression suite
+
+Feature Testing:
+- "test call logs functionality" → All call log flows
+- "verify appointment CRUD" → Add, edit, delete appointment flows
+- "test dashboard features" → All dashboard interaction flows
+
+Specific Workflows:
+- "complete call management workflow" → End-to-end call journey
+- "test search and filter in call logs" → Search + filter flows
+- "verify all button actions work" → Action-specific flows
+
+Action-Based:
+- "test adding and editing appointments" → add + edit flows
+- "verify viewing call details" → view detail flows
+
+Output:
+- List of selected flows in execution order
+- Priority levels and descriptions
+- Total estimated duration
+- Required parameters
+- Execution commands
+
+This tool is useful for:
+- Planning comprehensive test scenarios
+- Understanding flow dependencies
+- Creating custom test suites
+- Estimating test execution time
+- Discovering related flows

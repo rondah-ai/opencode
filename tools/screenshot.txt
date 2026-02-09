@@ -1,0 +1,16 @@
+Capture a screenshot of a webpage.
+
+Use this tool to:
+- Take screenshots for QA documentation
+- Capture visual evidence of bugs or issues
+- Document page state at specific moments
+- Create visual regression test baselines
+
+Features:
+- Full page or viewport screenshots
+- Automatic timestamped filenames
+- Custom filename support
+- PNG format output
+
+Screenshots are saved to .opencode/screenshots/ directory.
+Returns the file path and size of the captured screenshot.

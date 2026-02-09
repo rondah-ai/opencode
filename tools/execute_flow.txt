@@ -1,0 +1,65 @@
+Execute predefined test flows from QA_FLOWS.json.
+
+This tool runs automated test workflows defined in your QA flows file. Each flow contains sequential steps (navigate, click, type, verify) that simulate user interactions.
+
+Prerequisites:
+- Load QA context first using load_qa_context tool
+- Browser instance will be managed automatically
+
+Supported Step Actions:
+- navigate: Navigate to a URL or route
+- click: Click on an element
+- type: Type text into an input field
+- clear: Clear an input field
+- wait: Wait for duration or element to appear
+- verify: Verify element state, content, or page state
+
+Verification Types:
+- exists: Check if element exists/doesn't exist
+- visible: Check if element is visible/hidden
+- enabled: Check if element is enabled/disabled
+- contains: Check if element contains text
+- textIncludes: Check if element contains any of the specified texts
+- count: Check exact element count
+- minCount: Check minimum element count
+
+Parameters:
+- flowPath: Dot-notation path to flow (e.g., "callLogs.viewCallDetails")
+- params: Key-value pairs for dynamic values (optional)
+- takeScreenshots: Auto-capture screenshots at key steps (default: true)
+- stopOnError: Stop if step fails (default: true)
+- baseUrl: Override base URL (optional)
+
+Usage Examples:
+
+1. Simple flow execution:
+   execute_flow("callLogs.viewCallDetails")
+
+2. Flow with parameters:
+   execute_flow("appointmentTypes.addAppointmentType", {
+     appointmentName: "Cleaning",
+     duration: "30"
+   })
+
+3. Login flow:
+   execute_flow("authentication.login", {
+     email: "user@example.com",
+     password: "secret123"
+   })
+
+4. Custom base URL:
+   execute_flow("callLogs.viewCallList", baseUrl="https://staging.example.com")
+
+The tool will:
+- Execute each step in sequence
+- Take screenshots at key moments
+- Verify expected outcomes
+- Report detailed execution results
+- Save screenshots to .opencode/screenshots/{category}/
+
+Output includes:
+- Step-by-step execution log
+- Success/failure status
+- Execution duration vs expected duration
+- Screenshot locations
+- Error details if failed

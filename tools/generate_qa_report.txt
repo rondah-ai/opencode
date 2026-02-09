@@ -1,0 +1,81 @@
+Generate comprehensive HTML QA test reports with screenshots and execution details.
+
+This tool creates professional, shareable QA reports that document test execution results in a visually appealing HTML format.
+
+Report Features:
+- Executive summary with pass/fail statistics
+- Visual pass rate indicator
+- Total execution duration
+- Detailed per-flow results
+- Embedded screenshots
+- Error messages and stack traces
+- Test metadata (environment, tester, version, etc.)
+- Responsive design for all devices
+- Self-contained HTML (no external dependencies)
+
+Report Sections:
+1. Header - Report title and generation timestamp
+2. Summary Cards - Key metrics at a glance
+3. Test Results - Detailed flow-by-flow results
+4. Screenshots - Visual evidence of test execution
+5. Metadata - Environment and configuration details
+6. Footer - Generation info
+
+Parameters:
+- title: Report title (e.g., "Regression Test - Production")
+- results: Array of test results with status, duration, errors
+- summary: Optional summary text/notes
+- metadata: Additional metadata (env, tester, build number, etc.)
+- outputFilename: Custom filename (default: qa-report-{timestamp}.html)
+
+Result Object Structure:
+{
+  flowName: "View Call Details",
+  flowPath: "callLogs.viewCallDetails",
+  status: "passed" | "failed" | "skipped",
+  duration: 2800,
+  error: "Optional error message",
+  screenshots: ["path/to/screenshot1.png", ...]
+}
+
+Example Usage:
+generate_qa_report(
+  title="Smoke Test - Staging Environment",
+  results=[
+    {
+      flowName: "User Login",
+      flowPath: "authentication.login",
+      status: "passed",
+      duration: 2500,
+      screenshots: [".opencode/screenshots/login-step1.png"]
+    },
+    {
+      flowName: "View Call Logs",
+      flowPath: "callLogs.viewCallList",
+      status: "failed",
+      duration: 3200,
+      error: "Table not found",
+      screenshots: [".opencode/screenshots/error.png"]
+    }
+  ],
+  metadata={
+    environment: "staging",
+    tester: "QA Agent",
+    browser: "Chrome 120",
+    build: "v1.2.3"
+  }
+)
+
+Output:
+- HTML report saved to .opencode/qa-reports/
+- File path for opening in browser
+- Summary statistics
+- File size information
+
+Use Cases:
+- Daily smoke test reports
+- Regression test documentation
+- Bug reports with visual evidence
+- Compliance and audit trails
+- Stakeholder updates
+- Historical test tracking

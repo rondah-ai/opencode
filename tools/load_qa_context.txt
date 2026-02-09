@@ -1,0 +1,29 @@
+Load QA context files (anchor points and flows) for automated testing.
+
+This tool loads two critical JSON files that define the application blueprint and test scenarios:
+
+1. QA_ANCHOR_POINTS.json - Application Blueprint
+   - Routes and navigation paths
+   - UI component selectors (buttons, forms, tables, dialogs)
+   - Common selector patterns
+   - Wait strategies and timing recommendations
+
+2. QA_FLOWS.json - Test Flows
+   - Predefined user journey workflows
+   - Step-by-step test scenarios
+   - Priority levels and expected durations
+   - Test data and parameters
+   - Flow categories (smoke, regression, critical path)
+
+Parameters:
+- directory: Path to directory containing both JSON files
+- anchorPointsPath: Explicit path to QA_ANCHOR_POINTS.json (alternative)
+- flowsPath: Explicit path to QA_FLOWS.json (alternative)
+- reload: Force reload even if already cached (default: false)
+
+Usage Examples:
+- load_qa_context(directory="/path/to/rondah-web-console")
+- load_qa_context(anchorPointsPath="/path/to/anchors.json", flowsPath="/path/to/flows.json")
+- load_qa_context(directory="/path/to/project", reload=true)
+
+The context is cached in memory for the session, so subsequent tool calls can access it without reloading.

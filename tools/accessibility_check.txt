@@ -1,0 +1,114 @@
+Perform comprehensive accessibility (a11y) audits on web pages to ensure WCAG compliance.
+
+This tool validates web accessibility across multiple dimensions to ensure your application is usable by everyone, including people with disabilities.
+
+What It Checks:
+
+1. ARIA Attributes
+   - Proper role assignments
+   - Accessible names and descriptions
+   - ARIA landmarks
+   - Interactive element labeling
+
+2. Color Contrast
+   - Text vs background ratios
+   - WCAG AA: 4.5:1 for normal text
+   - WCAG AAA: 7:1 for normal text
+   - Large text requirements
+
+3. Keyboard Navigation
+   - Focus management
+   - Tab order
+   - Keyboard traps
+   - Skip links
+
+4. Form Accessibility
+   - Input labels
+   - Error messages
+   - Required field indicators
+   - Fieldset/legend usage
+
+5. Heading Hierarchy
+   - Proper nesting (h1 → h2 → h3)
+   - No skipped levels
+   - Logical structure
+
+6. Image Accessibility
+   - Alt text presence
+   - Descriptive alt text
+   - Decorative image handling
+
+Parameters:
+- url: Page to check (optional if already on page)
+- level: WCAG level - A, AA (default), or AAA
+- checks: Specific checks or "all" (default)
+- selector: Check specific section only
+
+WCAG Levels:
+- Level A: Minimum (basic accessibility)
+- Level AA: Mid-range (recommended standard)
+- Level AAA: Highest (enhanced accessibility)
+
+Issue Severity:
+🔴 Critical - Blocks users completely
+🟠 Serious - Significant barriers
+🟡 Moderate - Minor barriers
+🔵 Minor - Improvements
+
+Usage Examples:
+
+Full Page Audit:
+accessibility_check(level="AA")
+
+Specific Section:
+accessibility_check(selector="#main-content")
+
+Specific Checks:
+accessibility_check(checks=["contrast", "aria"])
+
+Strict Compliance:
+accessibility_check(level="AAA", checks=["all"])
+
+Output:
+- Total issues by severity
+- Detailed issue descriptions
+- WCAG criteria violated
+- Specific fix suggestions
+- Compliance status
+
+Compliance Determination:
+✅ PASSED - No critical/serious issues
+⚠️ PARTIAL - No critical issues, some serious
+❌ FAILED - Critical issues present
+
+Common Fixes:
+
+Missing Alt Text:
+<img src="logo.png" alt="Company Logo">
+
+Missing Label:
+<label for="email">Email:</label>
+<input id="email" type="email">
+
+Poor Contrast:
+Use darker text or lighter background
+
+Keyboard Trap:
+Remove tabindex="-1" from interactive elements
+
+Missing ARIA:
+<button aria-label="Close dialog">×</button>
+
+Best Practices:
+- Run checks early and often
+- Fix critical/serious issues first
+- Test with screen readers
+- Validate keyboard navigation manually
+- Consider real user testing
+- Document exceptions with justification
+
+Standards Compliance:
+- ADA (Americans with Disabilities Act)
+- Section 508
+- WCAG 2.1 Level AA (recommended minimum)
+- WCAG 2.1 Level AAA (ideal)

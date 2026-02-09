@@ -1,0 +1,31 @@
+Interact with web page elements - click buttons, fill forms, type text, and more.
+
+Use this tool to:
+- Click buttons, links, and other clickable elements
+- Fill form fields with text
+- Type into input fields (with keyboard events)
+- Select options from dropdowns
+- Scroll the page up or down
+- Hover over elements to trigger hover states
+- Press keyboard keys (Enter, Tab, Escape, etc.)
+- Wait for elements to appear
+
+Actions:
+- click: Click an element (buttons, links, etc.)
+- type: Type text into an element (fires keyboard events)
+- fill: Fill an element with text (faster, no keyboard events)
+- select: Select an option from a dropdown
+- scroll: Scroll the page by a number of pixels
+- hover: Hover over an element
+- wait: Wait for an element to become visible
+- press: Press a keyboard key on an element
+
+Selectors:
+Use CSS selectors to target elements:
+- ID: "#submit-button"
+- Class: ".login-btn"
+- Tag: "button"
+- Attribute: "input[name='email']"
+- Complex: "form.login button[type='submit']"
+
+The tool can optionally take a screenshot after the interaction to document the result.

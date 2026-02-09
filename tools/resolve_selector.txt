@@ -1,0 +1,59 @@
+Resolve natural language element descriptions to CSS selectors using anchor points.
+
+This tool acts as an intelligent translator between human-friendly element descriptions and precise CSS selectors. It queries the QA_ANCHOR_POINTS.json blueprint to find the correct selector patterns for your application.
+
+How it works:
+1. Analyzes your natural language description
+2. Searches through anchor points for matching patterns
+3. Returns the most confident selector match
+4. Provides alternatives if multiple matches exist
+
+Supported Element Types:
+- Buttons (primary, action, icon-based)
+- Inputs (text, email, password, select, checkbox, radio, switch, date)
+- Tables (rows, cells, headers, pagination)
+- Dialogs/Modals (container, title, close button)
+- Navigation items
+- Search/filter controls
+- Chips/badges/tags
+- Framework-specific components (NextUI, shadcn/ui)
+
+Parameters:
+- description: Natural language description of the element
+- context: Optional page/section context (e.g., "call logs page")
+- returnAll: Return all matches instead of just the best one (default: false)
+
+Example Queries:
+
+Simple Elements:
+- "Add Appointment Type button"
+- "email input"
+- "save button"
+- "close dialog button"
+
+With Context:
+- "status chip in first row"
+- "search input in call logs"
+- "view details button"
+
+Complex Descriptions:
+- "checkbox in row 3"
+- "button with copy icon"
+- "input with placeholder 'Search'"
+
+Advanced:
+- resolve_selector("Add button", context="appointment types page")
+- resolve_selector("status dropdown", returnAll=true)
+
+Output:
+- Best matching selector with confidence score
+- Source location in anchor points
+- Description of the element
+- Alternative selectors (if any)
+- Usage examples
+
+This tool is helpful for:
+- Writing custom test scenarios
+- Debugging selector issues
+- Understanding anchor point patterns
+- Learning the selector conventions of your app

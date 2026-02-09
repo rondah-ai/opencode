@@ -1,0 +1,84 @@
+Perform visual regression testing by comparing screenshots and detecting UI changes.
+
+This tool enables pixel-perfect UI testing to catch unintended visual changes.
+
+How it works:
+1. First run: Creates baseline screenshot
+2. Subsequent runs: Compares current state to baseline
+3. Detects differences: Calculates pixel differences
+4. Generates diff image: Highlights changed areas
+5. Pass/Fail: Based on threshold
+
+Use Cases:
+- Detect unintended CSS changes
+- Validate design updates don't break layout
+- Catch responsive design regressions
+- Document visual evolution
+- Ensure brand consistency
+
+Parameters:
+- name: Identifier for this test (e.g., "dashboard-kpis")
+- url: Page URL (optional if already on page)
+- selector: Test specific element only (optional)
+- threshold: Acceptable difference % (default: 0.1%)
+- updateBaseline: Accept current as new baseline (default: false)
+- fullPage: Capture full scrollable page (default: false)
+
+Workflow Example:
+
+1. Create Baseline:
+   visual_regression(name="dashboard-header")
+   → Creates baseline screenshot
+
+2. Test After Changes:
+   visual_regression(name="dashboard-header")
+   → Compares against baseline
+   → Reports differences if any
+
+3. Accept Changes:
+   visual_regression(name="dashboard-header", updateBaseline=true)
+   → Updates baseline with current screenshot
+
+Common Scenarios:
+
+Design Validation:
+- Test header across pages
+- Validate button states
+- Check responsive breakpoints
+- Verify modal layouts
+
+Regression Testing:
+- Run after CSS updates
+- Test after library upgrades
+- Validate after refactoring
+- Check cross-browser rendering
+
+Element-Specific:
+- visual_regression(name="login-form", selector="form")
+- visual_regression(name="data-table", selector="table")
+- visual_regression(name="nav-menu", selector="nav")
+
+Full Page:
+- visual_regression(name="homepage", fullPage=true)
+- visual_regression(name="dashboard", fullPage=true)
+
+Output Files:
+.opencode/visual-regression/
+├── baselines/        # Baseline screenshots
+├── current/          # Current screenshots
+└── diffs/            # Difference images
+
+Best Practices:
+- Use descriptive test names
+- Test at consistent viewport size
+- Wait for animations to complete
+- Use selectors for specific elements
+- Set appropriate thresholds
+- Review diffs before accepting
+- Version control baselines
+
+Threshold Guidelines:
+- 0% - Pixel perfect (strict)
+- 0.1% - Very strict (default)
+- 1% - Allows minor differences
+- 5% - Allows significant changes
