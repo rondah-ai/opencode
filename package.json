@@ -1,6 +1,6 @@
 {
   "name": "@rondah-ai/qa-agent",
-  "version": "1.0.1-beta.3",
+  "version": "1.0.1-beta.4",
   "description": "Automated QA testing agent with blueprint-based testing",
   "main": "index.js",
   "bin": {

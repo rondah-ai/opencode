@@ -113,18 +113,25 @@ async function main() {
       ignoreHTTPSErrors: true,
     });
 
-    // Bypass Vercel deployment protection via cookie (domain-scoped so it won't interfere with third-party APIs like Firebase Auth)
+    // Bypass Vercel deployment protection by adding headers only to Vercel domain requests
+    // (avoids CORS issues with third-party APIs like Firebase Auth)
     if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
-      const url = new URL(config.url);
-      await context.addCookies([{
-        name: '__vercel_protection_bypass',
-        value: process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
-        domain: url.hostname,
-        path: '/',
-        sameSite: 'None',
-        secure: true,
-      }]);
-      console.log('🔑 Vercel deployment protection bypass enabled (cookie)');
+      const vercelHost = new URL(config.url).hostname;
+      await context.route(`**/*`, async (route) => {
+        const reqUrl = new URL(route.request().url());
+        if (reqUrl.hostname === vercelHost) {
+          await route.continue({
+            headers: {
+              ...route.request().headers(),
+              'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+              'x-vercel-set-bypass-cookie': 'samesitenone',
+            },
+          });
+        } else {
+          await route.continue();
+        }
+      });
+      console.log('🔑 Vercel deployment protection bypass enabled');
     }
 
     page = await context.newPage();
