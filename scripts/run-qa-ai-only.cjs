@@ -97,9 +97,18 @@ async function main() {
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
+    // Bypass Vercel deployment protection if secret is provided
+    const extraHTTPHeaders = {};
+    if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+      extraHTTPHeaders['x-vercel-protection-bypass'] = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+      extraHTTPHeaders['x-vercel-set-bypass-cookie'] = 'samesitenone';
+      console.log('🔑 Vercel deployment protection bypass enabled');
+    }
+
     context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
       ignoreHTTPSErrors: true,
+      extraHTTPHeaders,
     });
 
     page = await context.newPage();
