@@ -113,6 +113,27 @@ async function main() {
       ignoreHTTPSErrors: true,
     });
 
+    // Bypass Vercel deployment protection by adding headers only to Vercel domain requests
+    // (avoids CORS issues with third-party APIs like Firebase Auth)
+    if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+      const vercelHost = new URL(config.url).hostname;
+      await context.route(`**/*`, async (route) => {
+        const reqUrl = new URL(route.request().url());
+        if (reqUrl.hostname === vercelHost) {
+          await route.continue({
+            headers: {
+              ...route.request().headers(),
+              'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+              'x-vercel-set-bypass-cookie': 'samesitenone',
+            },
+          });
+        } else {
+          await route.continue();
+        }
+      });
+      console.log('🔑 Vercel deployment protection bypass enabled');
+    }
+
     page = await context.newPage();
     console.log('✅ Browser ready\n');
 
@@ -454,7 +475,8 @@ async function tryAiFallback(page, step) {
         if (depth > 3) return '';
         const tag = el.tagName.toLowerCase();
         const id = el.id ? `#${el.id}` : '';
-        const classes = el.className ? `.${el.className.split(' ').join('.')}` : '';
+        const rawClass = typeof el.className === 'string' ? el.className : el.className?.baseVal || '';
+        const classes = rawClass ? `.${rawClass.split(' ').join('.')}` : '';
         const text = el.innerText ? el.innerText.substring(0, 50) : '';
         let result = `${'  '.repeat(depth)}${tag}${id}${classes}${text ? ` "${text}"` : ''}\n`;
         for (const child of el.children) {
