@@ -454,7 +454,8 @@ async function tryAiFallback(page, step) {
         if (depth > 3) return '';
         const tag = el.tagName.toLowerCase();
         const id = el.id ? `#${el.id}` : '';
-        const classes = el.className ? `.${el.className.split(' ').join('.')}` : '';
+        const rawClass = typeof el.className === 'string' ? el.className : el.className?.baseVal || '';
+        const classes = rawClass ? `.${rawClass.split(' ').join('.')}` : '';
         const text = el.innerText ? el.innerText.substring(0, 50) : '';
         let result = `${'  '.repeat(depth)}${tag}${id}${classes}${text ? ` "${text}"` : ''}\n`;
         for (const child of el.children) {

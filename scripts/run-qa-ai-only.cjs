@@ -359,7 +359,8 @@ async function getPageContext(page) {
           const text = el.innerText?.trim() || el.value || '';
           const tag = el.tagName.toLowerCase();
           const id = el.id ? `#${el.id}` : '';
-          const classes = el.className ? `.${el.className.split(' ').join('.')}` : '';
+          const rawClass = typeof el.className === 'string' ? el.className : el.className?.baseVal || '';
+          const classes = rawClass ? `.${rawClass.split(' ').join('.')}` : '';
           const testId = el.getAttribute('data-testid') ? `[data-testid="${el.getAttribute('data-testid')}"]` : '';
 
           if (text.length > 0 && text.length < 100) {
