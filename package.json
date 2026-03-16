@@ -7,14 +7,13 @@
     "qa-agent": "./bin/qa-agent.js"
   },
   "scripts": {
-    "test": "node scripts/run-qa-ci.js",
-    "test:smoke": "node scripts/run-qa-ci.js --suite smoke",
-    "test:regression": "node scripts/run-qa-ci.js --suite regression",
-    "test:critical": "node scripts/run-qa-ci.js --suite critical",
-    "test:hybrid": "node scripts/run-qa-hybrid.cjs --mode hybrid",
-    "test:hybrid:smoke": "node scripts/run-qa-hybrid.cjs --suite smoke --mode hybrid",
-    "test:ai": "node scripts/run-qa-ai-only.cjs",
-    "test:unified": "node scripts/run-qa-unified.cjs"
+    "init": "node scripts/init.js",
+    "learn": "node scripts/learn.js",
+    "test": "node scripts/run-test.js",
+    "test:smoke": "node scripts/run-test.js --suite smoke",
+    "test:full": "node scripts/run-test.js --suite full",
+    "e2e": "node scripts/run-e2e.js",
+    "e2e:heal": "node scripts/run-e2e.js --heal"
   },
   "keywords": [
     "qa",
