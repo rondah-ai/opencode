@@ -1,0 +1,26 @@
+Verify page behavior by capturing before/after state and running deterministic checks.
+
+This tool uses a two-phase pattern:
+1. Call with action="capture_before" to snapshot the current page state
+2. Perform your action (click, fill, navigate, etc.) using other tools
+3. Call again with the action description and beforeSnapshot ID to verify changes
+
+Check types (all deterministic Playwright queries, no AI):
+- element_count_changed: selector count differs from before
+- element_appeared: selector had 0 elements before, now > 0
+- element_disappeared: selector had > 0 elements before, now 0
+- text_appeared: specific text now visible on page
+- text_disappeared: specific text no longer on page
+- url_changed: URL differs from snapshot
+- no_errors: no error indicators on page
+- toast_appeared: toast/notification/alert present
+- count_equals: selector count equals expected value
+- custom_selector_visible: specific selector is visible
+- custom_selector_hidden: specific selector is hidden
+
+Example flow:
+1. verify_behavior({ action: "capture_before", checks: [{ name: "rows", type: "element_count_changed", selector: "tbody tr" }] })
+2. browser_interact({ action: "click", selector: "button:has-text('Apply')" })
+3. verify_behavior({ action: "applied filter", checks: [same], beforeSnapshot: "snap_abc" })
+
+Returns pass/fail per check with before/after values and human-readable details.

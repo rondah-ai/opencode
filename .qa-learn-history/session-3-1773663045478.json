@@ -1,0 +1,1243 @@
+{
+  "sessionNumber": 3,
+  "startTime": 1773663045476,
+  "endTime": 1773663045476,
+  "url": "http://localhost:3000",
+  "observations": [
+    {
+      "id": "obs-1",
+      "route": "/home/call-logs",
+      "events": [],
+      "interactionDescription": "navigated to /home/call-logs",
+      "stateBefore": {
+        "url": "http://localhost:3000/auth/sign-in?redirect=%2Fhome%2Fcall-logs",
+        "route": "/auth/sign-in",
+        "timestamp": 1773662943743,
+        "elementCounts": {
+          "tbody tr": 0,
+          "[role='row']": 0,
+          "table": 0,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 1,
+          "input:visible": 2,
+          "button:visible": 3,
+          ".error, .text-red-500": 0,
+          "thead th": 0,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Rondah",
+          "Log in to your account to continue",
+          "Email Address",
+          "Password",
+          "Forgot password?",
+          "Log In"
+        ],
+        "consoleErrorCount": 0,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "stateAfter": {
+        "url": "http://localhost:3000/home/call-logs",
+        "route": "/home/call-logs",
+        "timestamp": 1773662985080,
+        "elementCounts": {
+          "tbody tr": 10,
+          "[role='row']": 0,
+          "table": 1,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 0,
+          "input:visible": 2,
+          "button:visible": 63,
+          ".error, .text-red-500": 0,
+          "thead th": 7,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Pick a date",
+          "Filters",
+          "View",
+          "Caller",
+          "Start",
+          "Duration",
+          "Call Status",
+          "Outcomes",
+          "Status",
+          "Actions",
+          "+15551234567",
+          "5:40 PM - Mon, Sep 30",
+          "5:00",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "11:01 AM - Mon, Sep 30",
+          "1:37",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:37 AM - Mon, Sep 30",
+          "2:27",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:36 AM - Mon, Sep 30",
+          "3:31",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Emily Scott",
+          "4:36 AM - Mon, Sep 30",
+          "3:17",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:30 AM - Mon, Sep 30",
+          "1:30",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Jordan Lee",
+          "4:30 AM - Mon, Sep 30",
+          "6:00",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:30 AM - Mon, Sep 30",
+          "2:54",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "3:57 AM - Mon, Sep 30",
+          "4:06",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "3:34 AM - Mon, Sep 30",
+          "6:48",
+          "ended",
+          "Add",
+          "12 calls",
+          "Rows per page",
+          "10",
+          "Page",
+          "of",
+          "Practice Selector"
+        ],
+        "consoleErrorCount": 1,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "diff": {
+        "urlChanged": true,
+        "oldUrl": "http://localhost:3000/auth/sign-in?redirect=%2Fhome%2Fcall-logs",
+        "newUrl": "http://localhost:3000/home/call-logs",
+        "elementChanges": [
+          {
+            "selector": "tbody tr",
+            "before": 0,
+            "after": 10
+          },
+          {
+            "selector": "table",
+            "before": 0,
+            "after": 1
+          },
+          {
+            "selector": "form",
+            "before": 1,
+            "after": 0
+          },
+          {
+            "selector": "button:visible",
+            "before": 3,
+            "after": 63
+          },
+          {
+            "selector": "thead th",
+            "before": 0,
+            "after": 7
+          }
+        ],
+        "newTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Pick a date",
+          "Filters",
+          "View",
+          "Caller",
+          "Start",
+          "Duration"
+        ],
+        "removedTexts": [
+          "Rondah",
+          "Log in to your account to continue",
+          "Email Address",
+          "Password",
+          "Forgot password?",
+          "Log In"
+        ],
+        "consoleErrorsDelta": 1
+      },
+      "inferredVerifyChecks": [
+        {
+          "type": "no_js_errors",
+          "reason": "No uncaught JS errors"
+        },
+        {
+          "type": "no_console_errors",
+          "reason": "Console errors: 1"
+        },
+        {
+          "type": "no_error_alerts",
+          "reason": "No error alerts visible"
+        },
+        {
+          "type": "url_is",
+          "value": "/home/call-logs",
+          "reason": "URL changed to /home/call-logs"
+        },
+        {
+          "type": "landmark_visible",
+          "selector": "title",
+          "text": "Rondah AI Console",
+          "reason": "Page identity: title \"Rondah AI Console\""
+        }
+      ],
+      "landmark": {
+        "selector": "title",
+        "text": "Rondah AI Console"
+      },
+      "health": {
+        "route": "/home/call-logs",
+        "landmark": {
+          "selector": "title",
+          "text": "Rondah AI Console"
+        },
+        "checks": [
+          {
+            "type": "no_js_errors",
+            "reason": "No uncaught JS errors"
+          },
+          {
+            "type": "no_console_errors",
+            "reason": "Console errors: 1"
+          },
+          {
+            "type": "no_error_alerts",
+            "reason": "No error alerts visible"
+          },
+          {
+            "type": "url_is",
+            "value": "/home/call-logs",
+            "reason": "URL changed to /home/call-logs"
+          },
+          {
+            "type": "landmark_visible",
+            "selector": "title",
+            "text": "Rondah AI Console",
+            "reason": "Page identity: title \"Rondah AI Console\""
+          }
+        ]
+      },
+      "isEdgeCase": false,
+      "timestamp": 1773662985081
+    },
+    {
+      "id": "obs-2",
+      "route": "/home/reports",
+      "events": [],
+      "interactionDescription": "navigated to /home/reports",
+      "stateBefore": {
+        "url": "http://localhost:3000/home/call-logs",
+        "route": "/home/call-logs",
+        "timestamp": 1773662985080,
+        "elementCounts": {
+          "tbody tr": 10,
+          "[role='row']": 0,
+          "table": 1,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 0,
+          "input:visible": 2,
+          "button:visible": 63,
+          ".error, .text-red-500": 0,
+          "thead th": 7,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Pick a date",
+          "Filters",
+          "View",
+          "Caller",
+          "Start",
+          "Duration",
+          "Call Status",
+          "Outcomes",
+          "Status",
+          "Actions",
+          "+15551234567",
+          "5:40 PM - Mon, Sep 30",
+          "5:00",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "11:01 AM - Mon, Sep 30",
+          "1:37",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:37 AM - Mon, Sep 30",
+          "2:27",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:36 AM - Mon, Sep 30",
+          "3:31",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Emily Scott",
+          "4:36 AM - Mon, Sep 30",
+          "3:17",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:30 AM - Mon, Sep 30",
+          "1:30",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Jordan Lee",
+          "4:30 AM - Mon, Sep 30",
+          "6:00",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:30 AM - Mon, Sep 30",
+          "2:54",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "3:57 AM - Mon, Sep 30",
+          "4:06",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "3:34 AM - Mon, Sep 30",
+          "6:48",
+          "ended",
+          "Add",
+          "12 calls",
+          "Rows per page",
+          "10",
+          "Page",
+          "of",
+          "Practice Selector"
+        ],
+        "consoleErrorCount": 1,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "stateAfter": {
+        "url": "http://localhost:3000/home/reports",
+        "route": "/home/reports",
+        "timestamp": 1773662996956,
+        "elementCounts": {
+          "tbody tr": 1,
+          "[role='row']": 0,
+          "table": 1,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 0,
+          "input:visible": 1,
+          "button:visible": 27,
+          ".error, .text-red-500": 0,
+          "thead th": 7,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Reports",
+          "Dentrix Test Practice",
+          "Feb 16, 2026",
+          "Mar 16, 2026",
+          "Reset",
+          "Report:",
+          "Lost Patients",
+          "Lost Patients",
+          "New patients created but without scheduled appointments",
+          "0 records found",
+          "Refresh",
+          "Export CSV",
+          "Call ID",
+          "Patient ID",
+          "Date",
+          "Duration",
+          "Conclusion Point",
+          "Conclusion Reason",
+          "User Intents",
+          "No results.",
+          "Rows per page",
+          "50",
+          "Page",
+          "of"
+        ],
+        "consoleErrorCount": 1,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "Reports",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "diff": {
+        "urlChanged": true,
+        "oldUrl": "http://localhost:3000/home/call-logs",
+        "newUrl": "http://localhost:3000/home/reports",
+        "elementChanges": [
+          {
+            "selector": "tbody tr",
+            "before": 10,
+            "after": 1
+          },
+          {
+            "selector": "input:visible",
+            "before": 2,
+            "after": 1
+          },
+          {
+            "selector": "button:visible",
+            "before": 63,
+            "after": 27
+          }
+        ],
+        "newTexts": [
+          "Feb 16, 2026",
+          "Mar 16, 2026",
+          "Reset",
+          "Report:",
+          "Lost Patients",
+          "Lost Patients",
+          "New patients created but without scheduled appointments",
+          "0 records found",
+          "Refresh",
+          "Export CSV",
+          "Call ID",
+          "Patient ID",
+          "Date",
+          "Conclusion Point",
+          "Conclusion Reason",
+          "User Intents",
+          "No results.",
+          "50"
+        ],
+        "removedTexts": [
+          "Pick a date",
+          "Filters",
+          "View",
+          "Caller",
+          "Start",
+          "Call Status",
+          "Outcomes",
+          "Status",
+          "Actions",
+          "+15551234567",
+          "5:40 PM - Mon, Sep 30",
+          "5:00",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "11:01 AM - Mon, Sep 30",
+          "1:37",
+          "ended",
+          "Add"
+        ],
+        "consoleErrorsDelta": 0
+      },
+      "inferredVerifyChecks": [
+        {
+          "type": "no_js_errors",
+          "reason": "No uncaught JS errors"
+        },
+        {
+          "type": "no_console_errors",
+          "reason": "Console errors: 1"
+        },
+        {
+          "type": "no_error_alerts",
+          "reason": "No error alerts visible"
+        },
+        {
+          "type": "url_is",
+          "value": "/home/reports",
+          "reason": "URL changed to /home/reports"
+        },
+        {
+          "type": "landmark_visible",
+          "selector": "h1",
+          "text": "Reports",
+          "reason": "Page identity: h1 \"Reports\""
+        }
+      ],
+      "landmark": {
+        "selector": "h1",
+        "text": "Reports"
+      },
+      "health": {
+        "route": "/home/reports",
+        "landmark": {
+          "selector": "h1",
+          "text": "Reports"
+        },
+        "checks": [
+          {
+            "type": "no_js_errors",
+            "reason": "No uncaught JS errors"
+          },
+          {
+            "type": "no_console_errors",
+            "reason": "Console errors: 1"
+          },
+          {
+            "type": "no_error_alerts",
+            "reason": "No error alerts visible"
+          },
+          {
+            "type": "url_is",
+            "value": "/home/reports",
+            "reason": "URL changed to /home/reports"
+          },
+          {
+            "type": "landmark_visible",
+            "selector": "h1",
+            "text": "Reports",
+            "reason": "Page identity: h1 \"Reports\""
+          }
+        ]
+      },
+      "isEdgeCase": false,
+      "timestamp": 1773662996957
+    },
+    {
+      "id": "obs-3",
+      "route": "/home/voicemails",
+      "events": [],
+      "interactionDescription": "navigated to /home/voicemails",
+      "stateBefore": {
+        "url": "http://localhost:3000/home/reports",
+        "route": "/home/reports",
+        "timestamp": 1773662996956,
+        "elementCounts": {
+          "tbody tr": 1,
+          "[role='row']": 0,
+          "table": 1,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 0,
+          "input:visible": 1,
+          "button:visible": 27,
+          ".error, .text-red-500": 0,
+          "thead th": 7,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Reports",
+          "Dentrix Test Practice",
+          "Feb 16, 2026",
+          "Mar 16, 2026",
+          "Reset",
+          "Report:",
+          "Lost Patients",
+          "Lost Patients",
+          "New patients created but without scheduled appointments",
+          "0 records found",
+          "Refresh",
+          "Export CSV",
+          "Call ID",
+          "Patient ID",
+          "Date",
+          "Duration",
+          "Conclusion Point",
+          "Conclusion Reason",
+          "User Intents",
+          "No results.",
+          "Rows per page",
+          "50",
+          "Page",
+          "of"
+        ],
+        "consoleErrorCount": 1,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "Reports",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "stateAfter": {
+        "url": "http://localhost:3000/home/voicemails",
+        "route": "/home/voicemails",
+        "timestamp": 1773663000999,
+        "elementCounts": {
+          "tbody tr": 1,
+          "[role='row']": 0,
+          "table": 1,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 0,
+          "input:visible": 2,
+          "button:visible": 23,
+          ".error, .text-red-500": 0,
+          "thead th": 6,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Pick a date",
+          "Status",
+          "Priority",
+          "View",
+          "Caller",
+          "Created At",
+          "Status",
+          "Priority",
+          "Actions",
+          "No results.",
+          "of",
+          "row(s) selected.",
+          "Rows per page",
+          "10",
+          "Page",
+          "of"
+        ],
+        "consoleErrorCount": 1,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "diff": {
+        "urlChanged": true,
+        "oldUrl": "http://localhost:3000/home/reports",
+        "newUrl": "http://localhost:3000/home/voicemails",
+        "elementChanges": [
+          {
+            "selector": "input:visible",
+            "before": 1,
+            "after": 2
+          },
+          {
+            "selector": "button:visible",
+            "before": 27,
+            "after": 23
+          },
+          {
+            "selector": "thead th",
+            "before": 7,
+            "after": 6
+          }
+        ],
+        "newTexts": [
+          "Pick a date",
+          "Status",
+          "Priority",
+          "View",
+          "Caller",
+          "Created At",
+          "Status",
+          "Priority",
+          "Actions",
+          "row(s) selected.",
+          "10"
+        ],
+        "removedTexts": [
+          "Feb 16, 2026",
+          "Mar 16, 2026",
+          "Reset",
+          "Report:",
+          "Lost Patients",
+          "Lost Patients",
+          "New patients created but without scheduled appointments",
+          "0 records found",
+          "Refresh",
+          "Export CSV",
+          "Call ID",
+          "Patient ID",
+          "Date",
+          "Duration",
+          "Conclusion Point",
+          "Conclusion Reason",
+          "User Intents",
+          "50"
+        ],
+        "consoleErrorsDelta": 0
+      },
+      "inferredVerifyChecks": [
+        {
+          "type": "no_js_errors",
+          "reason": "No uncaught JS errors"
+        },
+        {
+          "type": "no_console_errors",
+          "reason": "Console errors: 1"
+        },
+        {
+          "type": "no_error_alerts",
+          "reason": "No error alerts visible"
+        },
+        {
+          "type": "url_is",
+          "value": "/home/voicemails",
+          "reason": "URL changed to /home/voicemails"
+        },
+        {
+          "type": "landmark_visible",
+          "selector": "title",
+          "text": "Rondah AI Console",
+          "reason": "Page identity: title \"Rondah AI Console\""
+        }
+      ],
+      "landmark": {
+        "selector": "title",
+        "text": "Rondah AI Console"
+      },
+      "health": {
+        "route": "/home/voicemails",
+        "landmark": {
+          "selector": "title",
+          "text": "Rondah AI Console"
+        },
+        "checks": [
+          {
+            "type": "no_js_errors",
+            "reason": "No uncaught JS errors"
+          },
+          {
+            "type": "no_console_errors",
+            "reason": "Console errors: 1"
+          },
+          {
+            "type": "no_error_alerts",
+            "reason": "No error alerts visible"
+          },
+          {
+            "type": "url_is",
+            "value": "/home/voicemails",
+            "reason": "URL changed to /home/voicemails"
+          },
+          {
+            "type": "landmark_visible",
+            "selector": "title",
+            "text": "Rondah AI Console",
+            "reason": "Page identity: title \"Rondah AI Console\""
+          }
+        ]
+      },
+      "isEdgeCase": false,
+      "timestamp": 1773663000999
+    },
+    {
+      "id": "obs-4",
+      "route": "/home/admin-hub/system-health",
+      "events": [],
+      "interactionDescription": "navigated to /home/admin-hub/system-health",
+      "stateBefore": {
+        "url": "http://localhost:3000/home/voicemails",
+        "route": "/home/voicemails",
+        "timestamp": 1773663000999,
+        "elementCounts": {
+          "tbody tr": 1,
+          "[role='row']": 0,
+          "table": 1,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 0,
+          "input:visible": 2,
+          "button:visible": 23,
+          ".error, .text-red-500": 0,
+          "thead th": 6,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Pick a date",
+          "Status",
+          "Priority",
+          "View",
+          "Caller",
+          "Created At",
+          "Status",
+          "Priority",
+          "Actions",
+          "No results.",
+          "of",
+          "row(s) selected.",
+          "Rows per page",
+          "10",
+          "Page",
+          "of"
+        ],
+        "consoleErrorCount": 1,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "stateAfter": {
+        "url": "http://localhost:3000/home/admin-hub/system-health",
+        "route": "/home/admin-hub/system-health",
+        "timestamp": 1773663009062,
+        "elementCounts": {
+          "tbody tr": 2,
+          "[role='row']": 0,
+          "table": 1,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 0,
+          "input:visible": 1,
+          "button:visible": 23,
+          ".error, .text-red-500": 0,
+          "thead th": 7,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Availability Audit",
+          "New Patient Tests",
+          "Existing Patient Tests",
+          "Availability Audit",
+          "Enabled",
+          "Comprehensive audit of system availability over time",
+          "Daily",
+          "Default Params",
+          "Trigger New Run",
+          "Total Runs",
+          "Passed",
+          "Failed",
+          "Running",
+          "45.0s",
+          "Avg Duration",
+          "Selected Test Parameters",
+          "Patient",
+          "wwrw rsdasd",
+          "Availability Window",
+          "Mar 16, 2026",
+          "Apr 15, 2026",
+          "Appointment Types",
+          "All types",
+          "Latest Results",
+          "3/16/2026, 5:09:40 AM",
+          "· Click any card to view details",
+          "passed",
+          "View Full Execution",
+          "Checkup",
+          "total slots",
+          "First:",
+          "No availability",
+          "Dates w/ Slots",
+          "Dates w/o Slots",
+          "31",
+          "Slots by Time",
+          "Morning (12am-12pm):",
+          "Afternoon (12pm-5pm):",
+          "Evening (5pm+):",
+          "Top Provider",
+          "N/A",
+          "Consultation",
+          "total slots",
+          "First:",
+          "No availability",
+          "Dates w/ Slots",
+          "Dates w/o Slots",
+          "31",
+          "Slots by Time",
+          "Morning (12am-12pm):",
+          "Afternoon (12pm-5pm):",
+          "Evening (5pm+):",
+          "Top Provider",
+          "N/A",
+          "Cleaning",
+          "total slots",
+          "First:",
+          "No availability",
+          "Dates w/ Slots",
+          "Dates w/o Slots",
+          "31",
+          "Slots by Time",
+          "Morning (12am-12pm):",
+          "Afternoon (12pm-5pm):",
+          "Evening (5pm+):",
+          "Top Provider",
+          "N/A",
+          "Whitening",
+          "total slots",
+          "First:",
+          "No availability",
+          "Dates w/ Slots",
+          "Dates w/o Slots",
+          "31",
+          "Slots by Time",
+          "Morning (12am-12pm):",
+          "Afternoon (12pm-5pm):",
+          "Evening (5pm+):",
+          "Top Provider",
+          "N/A",
+          "Emergency Examination",
+          "total slots",
+          "First:",
+          "No availability",
+          "Dates w/ Slots",
+          "Dates w/o Slots",
+          "31",
+          "Slots by Time",
+          "Morning (12am-12pm):",
+          "Afternoon (12pm-5pm):",
+          "Evening (5pm+):",
+          "Top Provider",
+          "N/A",
+          "Execution History",
+          "STATUS",
+          "DATE/TIME",
+          "DURATION",
+          "TRIGGER",
+          "SUMMARY",
+          "ACTIONS",
+          "Success",
+          "3/16/2026, 5:09:42 AM",
+          "2.08s",
+          "Scheduled",
+          "Audit completed successfully",
+          "View Details",
+          "Success",
+          "3/16/2026, 4:50:15 AM",
+          "2.13s",
+          "Scheduled",
+          "Audit completed successfully",
+          "View Details"
+        ],
+        "consoleErrorCount": 1,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "",
+          "h2": "Availability Audit",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "diff": {
+        "urlChanged": true,
+        "oldUrl": "http://localhost:3000/home/voicemails",
+        "newUrl": "http://localhost:3000/home/admin-hub/system-health",
+        "elementChanges": [
+          {
+            "selector": "tbody tr",
+            "before": 1,
+            "after": 2
+          },
+          {
+            "selector": "input:visible",
+            "before": 2,
+            "after": 1
+          },
+          {
+            "selector": "thead th",
+            "before": 6,
+            "after": 7
+          }
+        ],
+        "newTexts": [
+          "Availability Audit",
+          "New Patient Tests",
+          "Existing Patient Tests",
+          "Availability Audit",
+          "Enabled",
+          "Comprehensive audit of system availability over time",
+          "Daily",
+          "Default Params",
+          "Trigger New Run",
+          "Total Runs",
+          "Passed",
+          "Failed",
+          "Running",
+          "45.0s",
+          "Avg Duration",
+          "Selected Test Parameters",
+          "Patient",
+          "wwrw rsdasd",
+          "Availability Window",
+          "Mar 16, 2026"
+        ],
+        "removedTexts": [
+          "Pick a date",
+          "Status",
+          "Priority",
+          "View",
+          "Caller",
+          "Created At",
+          "Status",
+          "Priority",
+          "Actions",
+          "No results.",
+          "of",
+          "row(s) selected.",
+          "Rows per page",
+          "10",
+          "Page",
+          "of"
+        ],
+        "consoleErrorsDelta": 0
+      },
+      "inferredVerifyChecks": [
+        {
+          "type": "no_js_errors",
+          "reason": "No uncaught JS errors"
+        },
+        {
+          "type": "no_console_errors",
+          "reason": "Console errors: 1"
+        },
+        {
+          "type": "no_error_alerts",
+          "reason": "No error alerts visible"
+        },
+        {
+          "type": "url_is",
+          "value": "/home/admin-hub/system-health",
+          "reason": "URL changed to /home/admin-hub/system-health"
+        },
+        {
+          "type": "landmark_visible",
+          "selector": "h2",
+          "text": "Availability Audit",
+          "reason": "Page identity: h2 \"Availability Audit\""
+        }
+      ],
+      "landmark": {
+        "selector": "h2",
+        "text": "Availability Audit"
+      },
+      "health": {
+        "route": "/home/admin-hub/system-health",
+        "landmark": {
+          "selector": "h2",
+          "text": "Availability Audit"
+        },
+        "checks": [
+          {
+            "type": "no_js_errors",
+            "reason": "No uncaught JS errors"
+          },
+          {
+            "type": "no_console_errors",
+            "reason": "Console errors: 1"
+          },
+          {
+            "type": "no_error_alerts",
+            "reason": "No error alerts visible"
+          },
+          {
+            "type": "url_is",
+            "value": "/home/admin-hub/system-health",
+            "reason": "URL changed to /home/admin-hub/system-health"
+          },
+          {
+            "type": "landmark_visible",
+            "selector": "h2",
+            "text": "Availability Audit",
+            "reason": "Page identity: h2 \"Availability Audit\""
+          }
+        ]
+      },
+      "isEdgeCase": false,
+      "timestamp": 1773663009062
+    }
+  ],
+  "skippedCount": 0,
+  "modelPath": "./QA_FEATURE_MODEL.json"
+}

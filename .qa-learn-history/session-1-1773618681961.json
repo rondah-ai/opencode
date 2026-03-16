@@ -1,0 +1,9 @@
+{
+  "sessionNumber": 1,
+  "startTime": 1773618681959,
+  "endTime": 1773618681959,
+  "url": "http://localhost:3000",
+  "observations": [],
+  "skippedCount": 0,
+  "modelPath": "./QA_FEATURE_MODEL.json"
+}

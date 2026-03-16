@@ -1,58 +1,35 @@
-Compose dynamic test scenarios by intelligently combining multiple flows.
+Compose dynamic test scenarios from feature models or flow libraries.
 
-This tool acts as a test planner that analyzes your testing requirements and automatically selects the appropriate flows from QA_FLOWS.json to create a comprehensive test plan.
+Two modes — auto-selected based on available context:
 
-How it works:
-1. Analyzes your test description using keywords and intent
-2. Matches against available flows in the flows library
-3. Auto-includes prerequisites (e.g., login flows)
-4. Sequences flows in logical order
-5. Provides execution plan with timing estimates
+SMART MODE (feature model loaded):
+- Parses natural language intent to identify target features
+- Resolves dependencies via topological sort (e.g., login before call_logs)
+- Outputs ordered capability plan with verify checks, test data, cleanup
+- Suite types: smoke (view-only), regression (with edge cases), full (all capabilities)
+- Use explicit features param to bypass intent parsing (for CI)
 
-Matching Strategies:
-- Test categories (smoke, regression, critical path)
-- Feature keywords (call logs, appointments, dashboard)
-- Action verbs (view, add, edit, delete, search, filter)
-- Composite journeys (end-to-end workflows)
-- CRUD operations (comprehensive feature testing)
+LEGACY MODE (no feature model, QA_FLOWS.json only):
+- Keyword matching against flow categories and names
+- Supports: smoke, regression, critical path, CRUD, feature-specific
+- Auto-includes login prerequisite
 
 Parameters:
 - testDescription: What you want to test in natural language
-- includeLogin: Auto-add login flow if needed (default: true)
-- maxFlows: Limit number of flows (default: 10)
-- priorityFilter: Filter by priority level (critical/high/medium/low/all)
+- features: Explicit feature names (smart mode, optional)
+- suite: smoke | regression | full (smart mode, optional)
+- includeLogin: Auto-add login (legacy mode, default: true)
+- maxFlows: Limit flows (legacy mode, default: 10)
+- priorityFilter: Filter by priority (legacy mode, default: all)
 
-Example Queries:
+Smart mode examples:
+- "smoke test call_logs" → [authenticated, call_logs.view_list]
+- "regression test appointments" → full chain with edge cases
+- "test all features" → every feature in dependency order
 
-Test Categories:
-- "smoke tests" → Runs all smoke testing flows
-- "critical path" → Runs all critical path flows
-- "regression tests" → Runs full regression suite
+Legacy mode examples:
+- "smoke tests" → all smoke flows
+- "test call logs CRUD" → all call log flows
+- "critical path" → critical path flows
 
-Feature Testing:
-- "test call logs functionality" → All call log flows
-- "verify appointment CRUD" → Add, edit, delete appointment flows
-- "test dashboard features" → All dashboard interaction flows
-
-Specific Workflows:
-- "complete call management workflow" → End-to-end call journey
-- "test search and filter in call logs" → Search + filter flows
-- "verify all button actions work" → Action-specific flows
-
-Action-Based:
-- "test adding and editing appointments" → add + edit flows
-- "verify viewing call details" → view detail flows
-
-Output:
-- List of selected flows in execution order
-- Priority levels and descriptions
-- Total estimated duration
-- Required parameters
-- Execution commands
-
-This tool is useful for:
-- Planning comprehensive test scenarios
-- Understanding flow dependencies
-- Creating custom test suites
-- Estimating test execution time
-- Discovering related flows
+Output: ordered plan ready for execute_flow (capability or step mode).

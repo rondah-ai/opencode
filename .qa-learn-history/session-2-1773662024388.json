@@ -1,0 +1,303 @@
+{
+  "sessionNumber": 2,
+  "startTime": 1773662024387,
+  "endTime": 1773662024387,
+  "url": "http://localhost:3000",
+  "observations": [
+    {
+      "id": "obs-1",
+      "route": "/home/call-logs",
+      "events": [],
+      "interactionDescription": "navigated to /home/call-logs",
+      "stateBefore": {
+        "url": "http://localhost:3000/auth/sign-in?redirect=%2Fhome%2Fcall-logs",
+        "route": "/auth/sign-in",
+        "timestamp": 1773661923316,
+        "elementCounts": {
+          "tbody tr": 0,
+          "[role='row']": 0,
+          "table": 0,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 1,
+          "input:visible": 2,
+          "button:visible": 3,
+          ".error, .text-red-500": 0,
+          "thead th": 0,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Rondah",
+          "Log in to your account to continue",
+          "Email Address",
+          "Password",
+          "Forgot password?",
+          "Log In"
+        ],
+        "consoleErrorCount": 0,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "stateAfter": {
+        "url": "http://localhost:3000/home/call-logs",
+        "route": "/home/call-logs",
+        "timestamp": 1773661992530,
+        "elementCounts": {
+          "tbody tr": 10,
+          "[role='row']": 0,
+          "table": 1,
+          "[role='dialog']": 0,
+          "[role='alert']": 1,
+          "[role='status']": 0,
+          ".toast, [data-sonner-toast]": 0,
+          "form": 0,
+          "input:visible": 2,
+          "button:visible": 63,
+          ".error, .text-red-500": 0,
+          "thead th": 7,
+          "[class*='modal']": 0,
+          "[class*='filter-chip'], [class*='badge']": 0
+        },
+        "visibleTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Pick a date",
+          "Filters",
+          "View",
+          "Caller",
+          "Start",
+          "Duration",
+          "Call Status",
+          "Outcomes",
+          "Status",
+          "Actions",
+          "+15551234567",
+          "5:40 PM - Mon, Sep 30",
+          "5:00",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "11:01 AM - Mon, Sep 30",
+          "1:37",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:37 AM - Mon, Sep 30",
+          "2:27",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:36 AM - Mon, Sep 30",
+          "3:31",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Emily Scott",
+          "4:36 AM - Mon, Sep 30",
+          "3:17",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:30 AM - Mon, Sep 30",
+          "1:30",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Jordan Lee",
+          "4:30 AM - Mon, Sep 30",
+          "6:00",
+          "ended",
+          "Add",
+          "+16476914889",
+          "Daniel Porter",
+          "4:30 AM - Mon, Sep 30",
+          "2:54",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "3:57 AM - Mon, Sep 30",
+          "4:06",
+          "ended",
+          "Add",
+          "+14168289530",
+          "Daniel Porter",
+          "3:34 AM - Mon, Sep 30",
+          "6:48",
+          "ended",
+          "Add",
+          "12 calls",
+          "Rows per page",
+          "10",
+          "Page",
+          "of",
+          "Practice Selector"
+        ],
+        "consoleErrorCount": 1,
+        "landmarks": {
+          "title": "Rondah AI Console",
+          "h1": "",
+          "h2": "",
+          "dataTestIds": [],
+          "dataPages": [],
+          "activeNav": "",
+          "errorAlerts": []
+        }
+      },
+      "diff": {
+        "urlChanged": true,
+        "oldUrl": "http://localhost:3000/auth/sign-in?redirect=%2Fhome%2Fcall-logs",
+        "newUrl": "http://localhost:3000/home/call-logs",
+        "elementChanges": [
+          {
+            "selector": "tbody tr",
+            "before": 0,
+            "after": 10
+          },
+          {
+            "selector": "table",
+            "before": 0,
+            "after": 1
+          },
+          {
+            "selector": "form",
+            "before": 1,
+            "after": 0
+          },
+          {
+            "selector": "button:visible",
+            "before": 3,
+            "after": 63
+          },
+          {
+            "selector": "thead th",
+            "before": 0,
+            "after": 7
+          }
+        ],
+        "newTexts": [
+          "Dentrix Test Practice",
+          "Operations",
+          "Analytics",
+          "Appointments (Legacy)",
+          "Appointments",
+          "Call Logs",
+          "Reports",
+          "Voicemails",
+          "Notifications",
+          "System Health",
+          "Configurations",
+          "Admin Hub",
+          "john@mail.com",
+          "Toggle Sidebar",
+          "Pick a date",
+          "Filters",
+          "View",
+          "Caller",
+          "Start",
+          "Duration"
+        ],
+        "removedTexts": [
+          "Rondah",
+          "Log in to your account to continue",
+          "Email Address",
+          "Password",
+          "Forgot password?",
+          "Log In"
+        ],
+        "consoleErrorsDelta": 1
+      },
+      "inferredVerifyChecks": [
+        {
+          "type": "no_js_errors",
+          "reason": "No uncaught JS errors"
+        },
+        {
+          "type": "no_console_errors",
+          "reason": "Console errors: 1"
+        },
+        {
+          "type": "no_error_alerts",
+          "reason": "No error alerts visible"
+        },
+        {
+          "type": "url_is",
+          "value": "/home/call-logs",
+          "reason": "URL changed to /home/call-logs"
+        },
+        {
+          "type": "landmark_visible",
+          "selector": "title",
+          "text": "Rondah AI Console",
+          "reason": "Page identity: title \"Rondah AI Console\""
+        }
+      ],
+      "landmark": {
+        "selector": "title",
+        "text": "Rondah AI Console"
+      },
+      "health": {
+        "route": "/home/call-logs",
+        "landmark": {
+          "selector": "title",
+          "text": "Rondah AI Console"
+        },
+        "checks": [
+          {
+            "type": "no_js_errors",
+            "reason": "No uncaught JS errors"
+          },
+          {
+            "type": "no_console_errors",
+            "reason": "Console errors: 1"
+          },
+          {
+            "type": "no_error_alerts",
+            "reason": "No error alerts visible"
+          },
+          {
+            "type": "url_is",
+            "value": "/home/call-logs",
+            "reason": "URL changed to /home/call-logs"
+          },
+          {
+            "type": "landmark_visible",
+            "selector": "title",
+            "text": "Rondah AI Console",
+            "reason": "Page identity: title \"Rondah AI Console\""
+          }
+        ]
+      },
+      "isEdgeCase": false,
+      "timestamp": 1773661992531
+    }
+  ],
+  "skippedCount": 0,
+  "modelPath": "./QA_FEATURE_MODEL.json"
+}

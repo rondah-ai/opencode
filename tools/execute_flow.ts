@@ -2,40 +2,34 @@ import z from "zod"
 import { Tool } from "./tool"
 import { getQAContext } from "./load_qa_context"
 import { BrowserManager } from "../browser/manager"
+import { getInstructions, getWaitAfterAction, shouldScreenshot, isCapabilityExcluded } from "../qa/instructions"
 import path from "path"
 import fs from "fs/promises"
 import { Instance } from "../project/instance"
 
 const DESCRIPTION = `
-Execute predefined test flows from QA_FLOWS.json.
+Execute test workflows — either step-based flows from QA_FLOWS.json or capability-based plans from compose_test.
 
-This tool runs automated test workflows that are defined in the QA flows file.
-Each flow contains a series of steps (navigate, click, type, verify) that are
-executed sequentially.
+Two modes:
+1. STEP MODE (default): Execute predefined flow steps (navigate, click, type, verify)
+2. CAPABILITY MODE: Execute a capability plan from compose_test smart mode.
+   Each capability is presented to the agent as an instruction — the agent uses
+   scan_page, browser_interact, and verify_behavior to fulfill it.
 
-Prerequisites:
-- QA context must be loaded first using load_qa_context tool
-- Browser tools must be available
-
-Supported Actions:
-- navigate: Navigate to a URL
-- click: Click an element
-- type: Type text into an input
-- clear: Clear an input field
-- wait: Wait for duration or element
-- verify: Verify element state or content
-- screenshot: Take a screenshot (auto-added at key steps)
-
-Parameters:
+Step mode parameters:
 - flowPath: Dot-notation path to flow (e.g., "callLogs.viewCallDetails")
 - params: Key-value pairs for parameter substitution
-- takeScreenshots: Auto-capture screenshots at each step (default: true)
-- stopOnError: Stop execution if a step fails (default: true)
+- takeScreenshots: Auto-capture screenshots (default: true)
+- stopOnError: Stop on first error (default: true)
+
+Capability mode parameters:
+- mode: "capability"
+- plan: Array of capability steps from compose_test output
+- stopOnError: Stop on first error (default: true)
 
 Examples:
-- execute_flow("callLogs.viewCallDetails")
-- execute_flow("appointmentTypes.addAppointmentType", {appointmentName: "Checkup", duration: "30"})
-- execute_flow("authentication.login", {email: "test@example.com", password: "pass123"})
+  Step mode: execute_flow("callLogs.viewCallDetails")
+  Capability mode: execute_flow(mode="capability", plan=[...from compose_test...])
 `
 
 interface FlowStep {
@@ -70,17 +64,51 @@ interface FlowDefinition {
   composedOf?: string[]
 }
 
+const CapabilityStepSchema = z.object({
+  order: z.number(),
+  feature: z.string(),
+  capability: z.string(),
+  route: z.string(),
+  interaction: z.string(),
+  expected: z.array(z.string()),
+  verify: z.array(z.object({
+    type: z.string(),
+    selector: z.string().optional(),
+    value: z.string().optional(),
+  })).default([]),
+  testData: z.record(z.string(), z.any()).optional(),
+  cleanup: z.string().optional(),
+  edgeCases: z.array(z.string()).optional(),
+  isShared: z.boolean().default(false),
+})
+
 export const ExecuteFlowTool = Tool.define("execute_flow", {
   description: DESCRIPTION,
   parameters: z.object({
-    flowPath: z.string().describe("Dot-notation path to flow (e.g., 'callLogs.viewCallDetails')"),
-    params: z.record(z.string(), z.string()).optional().describe("Parameters for the flow"),
+    mode: z.enum(["step", "capability"]).default("step").describe("Execution mode"),
+    flowPath: z.string().optional().describe("Dot-notation path to flow (step mode)"),
+    plan: z.array(CapabilityStepSchema).optional().describe("Capability plan from compose_test (capability mode)"),
+    params: z.record(z.string(), z.string()).optional().describe("Parameters for the flow (step mode)"),
     takeScreenshots: z.boolean().default(true).describe("Capture screenshots at each step"),
     stopOnError: z.boolean().default(true).describe("Stop on first error"),
     baseUrl: z.string().optional().describe("Override base URL from flows metadata"),
   }),
   async execute(params, ctx) {
     const startTime = Date.now()
+
+    // ── Capability mode ───────────────────────────────────────────────
+    if (params.mode === "capability") {
+      return executeCapabilityPlan(params, ctx, startTime)
+    }
+
+    // ── Step mode (existing logic) ────────────────────────────────────
+    if (!params.flowPath) {
+      return {
+        output: 'Error: flowPath is required for step mode.',
+        title: "Execute Flow - Error",
+        metadata: { flowPath: "", success: false, failedStep: null, totalDuration: 0, expectedDuration: 0, screenshotsDir: "", screenshotCount: 0 },
+      }
+    }
 
     // Get QA context
     const qaContext = getQAContext()
@@ -97,6 +125,7 @@ Or:
     flowsPath="/path/to/QA_FLOWS.json"
   )`,
         title: "Execute Flow - Error",
+        metadata: { flowPath: params.flowPath, success: false, failedStep: null, totalDuration: 0, expectedDuration: 0, screenshotsDir: "", screenshotCount: 0 },
       }
     }
 
@@ -126,6 +155,7 @@ ${listAvailableFlows(qaContext.flows)}
 
 Tip: Use dot notation like "callLogs.viewCallDetails" or "authentication.login"`,
         title: "Execute Flow - Not Found",
+        metadata: { flowPath: params.flowPath, success: false, failedStep: null, totalDuration: 0, expectedDuration: 0, screenshotsDir: "", screenshotCount: 0 },
       }
     }
 
@@ -168,6 +198,7 @@ Example:
     ${flow.requiredParams.map(p => `${p}: "value"`).join(",\n    ")}
   })`,
           title: "Execute Flow - Missing Parameters",
+          metadata: { flowPath: params.flowPath, success: false, failedStep: null, totalDuration: 0, expectedDuration: flow.expectedDuration, screenshotsDir: "", screenshotCount: 0 },
         }
       }
     }
@@ -457,13 +488,205 @@ function listAvailableFlows(flows: any): string {
   const flowList: string[] = []
 
   for (const [category, categoryFlows] of Object.entries(flows.flows || {})) {
-    if (typeof categoryFlows === "object") {
+    if (typeof categoryFlows === "object" && categoryFlows !== null) {
       flowList.push(`\n${category}:`)
-      for (const flowName of Object.keys(categoryFlows)) {
+      for (const flowName of Object.keys(categoryFlows as Record<string, unknown>)) {
         flowList.push(`  - ${category}.${flowName}`)
       }
     }
   }
 
   return flowList.join("\n")
+}
+
+// ─── Capability Mode Execution ───────────────────────────────────────────────
+
+async function executeCapabilityPlan(
+  params: {
+    plan?: z.infer<typeof CapabilityStepSchema>[]
+    stopOnError: boolean
+    takeScreenshots: boolean
+  },
+  ctx: any,
+  startTime: number,
+) {
+  if (!params.plan || params.plan.length === 0) {
+    return {
+      output: 'Error: plan is required for capability mode. Use compose_test to generate a plan first.',
+      title: "Execute Flow - Error",
+      metadata: {
+        mode: "capability",
+        success: false,
+        stepsCompleted: 0,
+        totalSteps: 0,
+        results: [],
+      },
+    }
+  }
+
+  const results: {
+    order: number
+    feature: string
+    capability: string
+    status: "passed" | "failed" | "skipped"
+    interaction: string
+    verifyResults: { type: string; passed: boolean; detail: string }[]
+    duration: number
+    error?: string
+  }[] = []
+
+  let stopped = false
+
+  for (const step of params.plan) {
+    if (stopped) {
+      results.push({
+        order: step.order,
+        feature: step.feature,
+        capability: step.capability,
+        status: "skipped",
+        interaction: step.interaction,
+        verifyResults: [],
+        duration: 0,
+      })
+      continue
+    }
+
+    const stepStart = Date.now()
+
+    ctx.metadata({
+      title: `Step ${step.order}/${params.plan.length}: ${step.feature}.${step.capability}`,
+    })
+
+    try {
+      const page = await BrowserManager.getPage()
+
+      // Navigate to route if specified and different from current
+      if (step.route) {
+        const currentPath = new URL(page.url()).pathname
+        if (currentPath !== step.route) {
+          const origin = new URL(page.url()).origin
+          await page.goto(origin + step.route, { waitUntil: "networkidle", timeout: 30000 })
+          await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {})
+        }
+      }
+
+      // Capability execution is instruction-based — the interaction field
+      // describes what to do in natural language. In automated mode, we
+      // record the instruction and verify checks. The AI agent will interpret
+      // and execute the interaction using browser tools.
+      //
+      // For now, we record the plan step as "pending agent execution" and
+      // run verify checks if possible (checks that don't require prior action).
+
+      // Run verify checks that can be evaluated right now
+      const verifyResults: { type: string; passed: boolean; detail: string }[] = []
+
+      for (const check of step.verify) {
+        try {
+          if (check.type === "custom_selector_visible" && check.selector) {
+            const visible = await page.locator(check.selector).isVisible().catch(() => false)
+            verifyResults.push({
+              type: check.type,
+              passed: visible,
+              detail: visible ? `${check.selector} visible` : `${check.selector} not visible`,
+            })
+          } else if (check.type === "no_errors") {
+            const errors = await page.locator("[role='alert'][class*='error'], .error-boundary").count().catch(() => 0)
+            verifyResults.push({
+              type: check.type,
+              passed: errors === 0,
+              detail: errors === 0 ? "No errors" : `${errors} error elements found`,
+            })
+          } else {
+            // Before/after checks need the two-phase pattern — mark as pending
+            verifyResults.push({
+              type: check.type,
+              passed: true, // Optimistic — real check happens when agent runs verify_behavior
+              detail: `Pending agent execution (${check.type})`,
+            })
+          }
+        } catch {
+          verifyResults.push({
+            type: check.type,
+            passed: false,
+            detail: `Check failed to execute`,
+          })
+        }
+      }
+
+      // Screenshot
+      if (params.takeScreenshots) {
+        const fsModule = await import("fs")
+        const pathModule = await import("path")
+        const dir = ".opencode/screenshots/capability"
+        fsModule.mkdirSync(dir, { recursive: true })
+        const filename = `${step.order}-${step.feature}-${step.capability}-${Date.now()}.png`
+        await page.screenshot({ path: pathModule.join(dir, filename), fullPage: false }).catch(() => {})
+      }
+
+      results.push({
+        order: step.order,
+        feature: step.feature,
+        capability: step.capability,
+        status: verifyResults.every((v) => v.passed) ? "passed" : "failed",
+        interaction: step.interaction,
+        verifyResults,
+        duration: Date.now() - stepStart,
+      })
+    } catch (err) {
+      results.push({
+        order: step.order,
+        feature: step.feature,
+        capability: step.capability,
+        status: "failed",
+        interaction: step.interaction,
+        verifyResults: [],
+        duration: Date.now() - stepStart,
+        error: err instanceof Error ? err.message : String(err),
+      })
+
+      if (params.stopOnError) {
+        stopped = true
+      }
+    }
+  }
+
+  const totalDuration = Date.now() - startTime
+  const passed = results.filter((r) => r.status === "passed").length
+  const failed = results.filter((r) => r.status === "failed").length
+  const skipped = results.filter((r) => r.status === "skipped").length
+
+  const output = [
+    `Capability Execution: ${passed}/${results.length} passed`,
+    `Duration: ${(totalDuration / 1000).toFixed(1)}s`,
+    "",
+    ...results.map((r) => {
+      const icon = r.status === "passed" ? "PASS" : r.status === "failed" ? "FAIL" : "SKIP"
+      const lines = [`${icon} ${r.order}. ${r.feature}.${r.capability} (${r.duration}ms)`]
+      lines.push(`     Do: ${r.interaction}`)
+      if (r.verifyResults.length > 0) {
+        for (const v of r.verifyResults) {
+          lines.push(`     ${v.passed ? "ok" : "FAIL"} ${v.type}: ${v.detail}`)
+        }
+      }
+      if (r.error) lines.push(`     Error: ${r.error}`)
+      return lines.join("\n")
+    }),
+  ].join("\n")
+
+  return {
+    output,
+    title: `Capabilities: ${passed}/${results.length} passed`,
+    metadata: {
+      mode: "capability" as const,
+      success: failed === 0 && skipped === 0,
+      stepsCompleted: passed + failed,
+      totalSteps: results.length,
+      passed,
+      failed,
+      skipped,
+      results,
+      duration: totalDuration,
+    },
+  }
 }

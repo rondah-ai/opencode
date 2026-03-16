@@ -1,0 +1,5 @@
+.env
+node_modules/
+qa-results/
+.qa-learn-session.json
+*.log
