@@ -1,0 +1,21 @@
+Crawl an entire web application to build a site model with patterns, smoke checks, and navigation structure.
+
+Use this tool to:
+- Discover all pages in an app via BFS crawl from a root URL
+- Optionally log in first (auto-detects auth_form pattern on login page)
+- Recognize UI patterns on every page (tables, forms, navigation, CRUD, etc.)
+- Run smoke checks across the entire site
+- Collect console errors per page
+- Build a complete site model saved to .opencode/site-maps/
+
+The crawl is a breadth-first traversal:
+1. (Optional) Navigate to login URL, detect auth_form, fill credentials, submit
+2. Start BFS from root URL — scan each page for patterns and interactive elements
+3. Add discovered same-origin links + nav_sidebar links to the crawl queue
+4. Skip already-visited URLs (normalized) and excluded patterns
+5. (Optional) Run smoke checks per pattern on each page
+6. Save site model and smoke report as JSON
+
+Returns a structured site model with per-page pattern data, a navigation graph, smoke results, and console errors.
+
+This is the discovery tool — use it once to understand an app's structure before writing tests or generating a feature model.

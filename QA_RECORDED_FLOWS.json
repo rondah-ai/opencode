@@ -1,0 +1,194 @@
+{
+  "version": "1.0",
+  "flows": [
+    {
+      "name": "login process",
+      "startRoute": "/auth/sign-in",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "route": "/home/call-logs",
+          "description": "click input [aria-label=\"Email Address\"], type \"john@mail.com\" in Enter your email, click input [aria-label=\"Password\"], type (password) in Enter your password, click button \"Log In\", submit form, navigate to /home/call-logs, click button \"Select practice\", select option 1 in Suggestions",
+          "actions": [
+            {
+              "type": "fill",
+              "selector": "[aria-label=\"Email Address\"]",
+              "value": "john@mail.com",
+              "field": "Enter your email",
+              "selectorFallbacks": [
+                "[aria-label=\"Email Address\"]"
+              ]
+            },
+            {
+              "type": "fill",
+              "selector": "[aria-label=\"Password\"]",
+              "value": "$PASSWORD",
+              "field": "Enter your password",
+              "selectorFallbacks": [
+                "[aria-label=\"Password\"]"
+              ]
+            },
+            {
+              "type": "click",
+              "selector": "button:has-text('Log In')",
+              "text": "Log In",
+              "selectorFallbacks": [
+                "button:has-text('Log In')",
+                "button:has-text(\"Log In\")"
+              ]
+            },
+            {
+              "type": "waitForURL",
+              "value": "/home/call-logs"
+            },
+            {
+              "type": "select",
+              "selector": "div > div.overflow-hidden.p-1 > div > div > div.relative.flex",
+              "triggerSelector": "button:has-text('Select practice')",
+              "triggerText": "Select practice",
+              "position": 1,
+              "value": "Dentrix Test Practice pracDentrix",
+              "field": "Suggestions",
+              "selectorFallbacks": [
+                "div:has-text('Dentrix Test Practice')",
+                "div > div.overflow-hidden.p-1 > div > div > div.relative.flex"
+              ]
+            }
+          ],
+          "rawEventCount": 9,
+          "landmark": {
+            "selector": "title",
+            "text": "Rondah AI Console"
+          },
+          "stateAfter": {
+            "url": "http://localhost:3000/home/call-logs",
+            "route": "/home/call-logs",
+            "timestamp": 1773663910775,
+            "elementCounts": {
+              "tbody tr": 10,
+              "[role='row']": 0,
+              "table": 1,
+              "[role='dialog']": 0,
+              "[role='alert']": 1,
+              "[role='status']": 0,
+              ".toast, [data-sonner-toast]": 0,
+              "form": 0,
+              "input:visible": 2,
+              "button:visible": 63,
+              ".error, .text-red-500": 0,
+              "thead th": 7,
+              "[class*='modal']": 0,
+              "[class*='filter-chip'], [class*='badge']": 0
+            },
+            "visibleTexts": [
+              "Dentrix Test Practice",
+              "Operations",
+              "Analytics",
+              "Appointments (Legacy)",
+              "Appointments",
+              "Call Logs",
+              "Reports",
+              "Voicemails",
+              "Notifications",
+              "System Health",
+              "Configurations",
+              "Admin Hub",
+              "john@mail.com",
+              "Toggle Sidebar",
+              "Pick a date",
+              "Filters",
+              "View",
+              "Caller",
+              "Start",
+              "Duration",
+              "Call Status",
+              "Outcomes",
+              "Status",
+              "Actions",
+              "+15551234567",
+              "5:40 PM - Mon, Sep 30",
+              "5:00",
+              "ended",
+              "Add",
+              "+14168289530",
+              "Daniel Porter",
+              "11:01 AM - Mon, Sep 30",
+              "1:37",
+              "ended",
+              "Add",
+              "+16476914889",
+              "Daniel Porter",
+              "4:37 AM - Mon, Sep 30",
+              "2:27",
+              "ended",
+              "Add",
+              "+16476914889",
+              "Daniel Porter",
+              "4:36 AM - Mon, Sep 30",
+              "3:31",
+              "ended",
+              "Add",
+              "+16476914889",
+              "Emily Scott",
+              "4:36 AM - Mon, Sep 30",
+              "3:17",
+              "ended",
+              "Add",
+              "+16476914889",
+              "Daniel Porter",
+              "4:30 AM - Mon, Sep 30",
+              "1:30",
+              "ended",
+              "Add",
+              "+16476914889",
+              "Jordan Lee",
+              "4:30 AM - Mon, Sep 30",
+              "6:00",
+              "ended",
+              "Add",
+              "+16476914889",
+              "Daniel Porter",
+              "4:30 AM - Mon, Sep 30",
+              "2:54",
+              "ended",
+              "Add",
+              "+14168289530",
+              "Daniel Porter",
+              "3:57 AM - Mon, Sep 30",
+              "4:06",
+              "ended",
+              "Add",
+              "+14168289530",
+              "Daniel Porter",
+              "3:34 AM - Mon, Sep 30",
+              "6:48",
+              "ended",
+              "Add",
+              "12 calls",
+              "Rows per page",
+              "10",
+              "Page",
+              "of",
+              "Practice Selector"
+            ],
+            "consoleErrorCount": 1,
+            "landmarks": {
+              "title": "Rondah AI Console",
+              "h1": "",
+              "h2": "",
+              "dataTestIds": [],
+              "dataPages": [],
+              "activeNav": "",
+              "errorAlerts": []
+            }
+          },
+          "verify": [],
+          "timestamp": 1773663910775
+        }
+      ],
+      "stepCount": 1,
+      "recordedAt": "2026-03-16T12:25:34.168Z"
+    }
+  ],
+  "lastUpdated": "2026-03-16T12:25:39.381Z"
+}

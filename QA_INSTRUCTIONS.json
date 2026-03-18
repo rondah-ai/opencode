@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "global": {
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "defaultTimeout": 10000,
+    "waitAfterAction": 500,
+    "toastTimeout": 5000,
+    "screenshotsOn": [
+      "failure",
+      "capability_complete"
+    ],
+    "customSelectors": {
+      "toast": "[data-sonner-toast], [role='status'], [role='alert']"
+    }
+  },
+  "scope": {
+    "exclude_routes": [],
+    "exclude_capabilities": [],
+    "include_only": null,
+    "max_pages": 20
+  },
+  "timing": {
+    "slow_transitions": [],
+    "toast_appear_delay": 3000,
+    "page_load_buffer": 1000
+  },
+  "known_issues": [],
+  "auth": {
+    "strategy": "form",
+    "session_duration": "30m",
+    "reauth_on_redirect": true,
+    "mfa": false
+  },
+  "environment_overrides": {},
+  "agent_hints": []
+}

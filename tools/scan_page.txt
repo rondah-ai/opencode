@@ -1,0 +1,20 @@
+Scan a web page to detect UI patterns, interactive elements, and outbound routes.
+
+Use this tool to:
+- Discover what patterns exist on a page (data tables, forms, navigation, CRUD operations, etc.)
+- Collect interactive elements (buttons, inputs, links) with their selectors
+- Find outbound routes for site mapping
+- Run smoke checks against detected patterns
+- Build a structured understanding of a page before composing tests
+
+The scan uses deterministic pattern matching (Playwright locator queries) — not AI interpretation.
+Each pattern gets a confidence score based on how many recognition signals match.
+
+Returns:
+- Matched patterns with confidence scores and extracted details
+- Interactive elements (buttons, inputs, links) with selectors and labels
+- Outbound same-origin routes for crawl discovery
+- Optional smoke check results per pattern
+- Optional screenshot path
+
+This is the foundation tool for the Smart QA system. Use it before compose_test to understand what a page contains, or as part of map_site to crawl an entire application.

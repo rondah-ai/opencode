@@ -20,6 +20,15 @@ export namespace BrowserManager {
   // Auto-close browser after 5 minutes of inactivity
   const INACTIVITY_TIMEOUT = 5 * 60 * 1000
 
+  // Console error buffer — captures JS errors from the page
+  interface ConsoleError {
+    type: string
+    text: string
+    url: string
+    timestamp: number
+  }
+  let consoleErrors: ConsoleError[] = []
+
   /**
    * Get or create a browser instance
    */
@@ -83,6 +92,27 @@ export namespace BrowserManager {
     page.setDefaultTimeout(30000)
     page.setDefaultNavigationTimeout(60000)
 
+    // Attach console error listener
+    page.on('console', (msg) => {
+      if (msg.type() === 'error' || msg.type() === 'warning') {
+        consoleErrors.push({
+          type: msg.type(),
+          text: msg.text(),
+          url: page?.url() ?? '',
+          timestamp: Date.now(),
+        })
+      }
+    })
+
+    page.on('pageerror', (err) => {
+      consoleErrors.push({
+        type: 'pageerror',
+        text: err.message,
+        url: page?.url() ?? '',
+        timestamp: Date.now(),
+      })
+    })
+
     lastActivityTime = Date.now()
     return page
   }
@@ -142,6 +172,7 @@ export namespace BrowserManager {
     page = null
     context = null
     browser = null
+    consoleErrors = []
   }
 
   /**
@@ -162,6 +193,29 @@ export namespace BrowserManager {
     if (inactive > INACTIVITY_TIMEOUT && browser) {
       await close()
     }
+  }
+
+  /**
+   * Get buffered console errors since last clear
+   */
+  export function getConsoleErrors(): ConsoleError[] {
+    return [...consoleErrors]
+  }
+
+  /**
+   * Clear the console error buffer
+   */
+  export function clearConsoleErrors(): void {
+    consoleErrors = []
+  }
+
+  /**
+   * Get and clear console errors in one call
+   */
+  export function drainConsoleErrors(): ConsoleError[] {
+    const errors = consoleErrors
+    consoleErrors = []
+    return errors
   }
 
   /**
