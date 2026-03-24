@@ -165,6 +165,29 @@ const TRACKER_SCRIPT = `
               }
             }
           }
+          // Find the trigger element that opened this dropdown
+          let triggerSel = '';
+          let triggerTxt = '';
+          // Strategy 1: find button/combobox with aria-controls pointing to the listbox or its parent dialog
+          const listboxId = listbox ? listbox.id : '';
+          const dialogParent = option.closest('[role="dialog"], [data-state="open"]');
+          const dialogId = dialogParent ? dialogParent.id : '';
+          const controlsId = listboxId || dialogId;
+          if (controlsId) {
+            const trigger = document.querySelector('[aria-controls="' + controlsId + '"]');
+            if (trigger) {
+              triggerSel = this.getSelector(trigger);
+              triggerTxt = (trigger.textContent || '').trim().slice(0, 100);
+            }
+          }
+          // Strategy 2: find the nearest open combobox/button with aria-expanded
+          if (!triggerSel) {
+            const expandedTrigger = document.querySelector('[aria-expanded="true"][role="combobox"], button[aria-expanded="true"][data-state="open"]');
+            if (expandedTrigger) {
+              triggerSel = this.getSelector(expandedTrigger);
+              triggerTxt = (expandedTrigger.textContent || '').trim().slice(0, 100);
+            }
+          }
           this.events.push({
             type: 'select_option',
             timestamp: Date.now(),
@@ -172,8 +195,10 @@ const TRACKER_SCRIPT = `
             value: option.getAttribute('data-value') || (option.textContent || '').trim().slice(0, 100),
             text: (option.textContent || '').trim().slice(0, 100),
             tag: option.tagName.toLowerCase(),
-            field: triggerLabel || 'dropdown',
+            field: triggerLabel || triggerTxt || 'dropdown',
             position: position,
+            triggerSelector: triggerSel || undefined,
+            triggerText: triggerTxt || undefined,
             url: window.location.href,
           });
           return;
@@ -935,6 +960,12 @@ function collapseEvents(events, config = {}) {
         triggerSelector = prevClick.selector
         triggerText = prevClick.text
         actions.pop() // remove it — we'll embed it in the select action
+      }
+      // If no preceding click found (e.g., dropdown opened in a previous step),
+      // use the trigger info captured by the event tracker from the DOM
+      if (!triggerSelector && ev.triggerSelector) {
+        triggerSelector = ev.triggerSelector
+        triggerText = ev.triggerText || null
       }
 
       actions.push({
