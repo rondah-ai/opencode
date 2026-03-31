@@ -38,7 +38,7 @@ const config = {
   excludeRoutes: (getArg("--exclude") || "").split(",").filter(Boolean),
   instructionsOnly: hasFlag("--instructions"),
   timeout: parseInt(getArg("--timeout") || "30000", 10),
-  headless: getArg("--headless") !== "false",
+  headless: !hasFlag("--no-headless") && getArg("--headless") !== "false",
 }
 
 if (!config.url) {
@@ -255,8 +255,7 @@ async function main() {
   let browser
 
   try {
-    // Step 1: Launch browser and scan
-    console.log("Step 1: Scanning site...")
+    // Launch browser
     browser = await chromium.launch({ headless: config.headless })
     const context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
@@ -275,68 +274,79 @@ async function main() {
       consoleErrors.push({ type: "pageerror", text: err.message, url: page.url() })
     })
 
-    // Authenticate if credentials provided
-    let authRoute = null
-    if (config.email && config.password) {
-      console.log("  Authenticating...")
-      authRoute = await authenticate(page, config.url, config.email, config.password, config.timeout)
-      if (authRoute) {
-        console.log(`  Authenticated (login page: ${authRoute})`)
-      } else {
-        console.log("  Warning: Authentication may have failed")
-      }
-    }
-
-    // BFS crawl
-    const siteModel = {}
-    const visited = new Set()
-    const queue = [page.url().startsWith(config.url) ? page.url() : config.url]
+    const hasCreds = config.email && config.password
     const origin = new URL(config.url).origin
-    let scanned = 0
+    let authRoute = null
+    let preAuthModel = {}
+    let postAuthModel = {}
+    let stepNum = 1
 
-    while (queue.length > 0 && visited.size < config.maxPages) {
-      const url = queue.shift()
-      const normalized = normalizeUrl(url)
+    // ── Phase A: Pre-auth crawl (shallow if creds provided) ──
+    const preAuthMaxPages = hasCreds ? Math.min(config.maxPages, 10) : config.maxPages
+    const preAuthMaxDepth = hasCreds ? 3 : Infinity
+    console.log(`Step ${stepNum}: Scanning ${hasCreds ? "public" : ""} pages...`)
+    const preAuthResult = await crawlPages(page, [config.url], origin, {
+      maxPages: preAuthMaxPages,
+      maxDepth: preAuthMaxDepth,
+      timeout: config.timeout,
+      excludeRoutes: config.excludeRoutes,
+      consoleErrors,
+    })
+    preAuthModel = preAuthResult.siteModel
+    console.log(`\n  Scanned ${Object.keys(preAuthModel).length} ${hasCreds ? "public " : ""}pages`)
+    stepNum++
 
-      if (visited.has(normalized)) continue
-      if (isExcluded(normalized, config.excludeRoutes, origin)) continue
+    if (hasCreds) {
+      // ── Phase B: Find login page ──
+      console.log(`\nStep ${stepNum}: Finding login page...`)
+      const loginPage = await findLoginPage(preAuthModel, page, origin, config.timeout)
+      stepNum++
 
-      visited.add(normalized)
-      scanned++
-      process.stdout.write(`  Scanning page ${scanned}/${config.maxPages}: ${new URL(normalized).pathname}...\r`)
+      if (loginPage) {
+        console.log(`  Found login page: ${loginPage.route} (via ${loginPage.source})`)
 
-      const scanResult = await scanPage(page, url, origin, config.timeout, consoleErrors)
-      siteModel[scanResult.route] = scanResult
+        // ── Phase C: Authenticate ──
+        console.log("  Authenticating...")
+        authRoute = await authenticate(page, loginPage.url, config.email, config.password, config.timeout)
 
-      if (scanResult.success) {
-        // Queue outbound routes
-        for (const outRoute of scanResult.outboundRoutes) {
-          const outUrl = origin + outRoute
-          const outNorm = normalizeUrl(outUrl)
-          if (!visited.has(outNorm) && !isExcluded(outNorm, config.excludeRoutes, origin)) {
-            queue.push(outUrl)
-          }
+        if (authRoute) {
+          const postLoginPath = new URL(page.url()).pathname
+          console.log(`  Authenticated. Now on: ${postLoginPath}`)
+
+          // ── Phase D: Post-auth crawl (full) ──
+          console.log(`\nStep ${stepNum}: Scanning authenticated pages...`)
+          const postAuthResult = await crawlPages(page, [page.url()], origin, {
+            maxPages: config.maxPages,
+            maxDepth: Infinity,
+            timeout: config.timeout,
+            excludeRoutes: config.excludeRoutes,
+            consoleErrors,
+            visited: preAuthResult.visited,
+          })
+          postAuthModel = postAuthResult.siteModel
+          console.log(`\n  Scanned ${Object.keys(postAuthModel).length} authenticated pages`)
+          stepNum++
+        } else {
+          console.log("  Warning: Authentication failed. Continuing with public pages only.")
         }
-
-        // Queue nav sidebar links
-        const navLinks = scanResult.navLinks || []
-        for (const href of navLinks) {
-          try {
-            const linkUrl = new URL(href, origin).href
-            if (!linkUrl.startsWith(origin)) continue
-            const linkNorm = normalizeUrl(linkUrl)
-            if (!visited.has(linkNorm) && !isExcluded(linkNorm, config.excludeRoutes, origin)) {
-              queue.push(linkUrl)
-            }
-          } catch { /* invalid URL */ }
-        }
+      } else {
+        console.log("  Warning: No login page found. Continuing with public pages only.")
       }
-
-      // Rate limit
-      await new Promise((r) => setTimeout(r, 500))
     }
 
-    console.log(`\n  Scanned ${Object.keys(siteModel).length} pages`)
+    // ── Phase E: Merge ──
+    const siteModel = { ...preAuthModel }
+    for (const [route, scan] of Object.entries(postAuthModel)) {
+      if (!siteModel[route]) {
+        siteModel[route] = { ...scan, requiresAuth: true }
+      }
+    }
+
+    const publicCount = Object.keys(preAuthModel).length
+    const authCount = Object.keys(postAuthModel).length
+    if (hasCreds && authCount > 0) {
+      console.log(`\n  Total: ${Object.keys(siteModel).length} pages (${publicCount} public, ${authCount} authenticated)`)
+    }
 
     // Summarize patterns
     const patternCounts = {}
@@ -352,9 +362,10 @@ async function main() {
     )
     console.log("")
 
-    // Step 2: Generate feature model
+    // Generate feature model
     if (!config.instructionsOnly) {
-      console.log("Step 2: Generating feature model...")
+      console.log(`\nStep ${stepNum}: Generating feature model...`)
+      stepNum++
       const featureModel = generateFeatureModel(siteModel, {
         authRoute,
         excludeRoutes: config.excludeRoutes,
@@ -407,8 +418,8 @@ async function main() {
       console.log("")
     }
 
-    // Step 3: Generate instructions
-    console.log(`Step ${config.instructionsOnly ? "2" : "3"}: Generating instructions...`)
+    // Generate instructions
+    console.log(`Step ${stepNum}: Generating instructions...`)
     const instructions = generateInstructions(siteModel, {
       excludeRoutes: config.excludeRoutes,
       hasAuth: !!authRoute,
@@ -454,6 +465,116 @@ async function main() {
   } finally {
     if (browser) await browser.close()
   }
+}
+
+// ─── Crawl & Discovery ──────────────────────────────────────────────────────
+
+async function crawlPages(page, startUrls, origin, options = {}) {
+  const {
+    maxPages = 20,
+    maxDepth = Infinity,
+    timeout = 30000,
+    excludeRoutes = [],
+    consoleErrors = [],
+    visited = new Set(),
+  } = options
+
+  const siteModel = {}
+  const queue = startUrls.map((url) => ({ url, depth: 0 }))
+  let scanned = 0
+
+  while (queue.length > 0 && visited.size < maxPages) {
+    const { url, depth } = queue.shift()
+    if (depth > maxDepth) continue
+
+    const normalized = normalizeUrl(url)
+    if (visited.has(normalized)) continue
+    if (isExcluded(normalized, excludeRoutes, origin)) continue
+
+    visited.add(normalized)
+    scanned++
+    process.stdout.write(`  Scanning page ${scanned}/${maxPages}: ${new URL(normalized).pathname}...\r`)
+
+    const scanResult = await scanPage(page, url, origin, timeout, consoleErrors)
+    siteModel[scanResult.route] = scanResult
+
+    if (scanResult.success) {
+      // Queue outbound routes
+      for (const outRoute of scanResult.outboundRoutes) {
+        const outUrl = origin + outRoute
+        const outNorm = normalizeUrl(outUrl)
+        if (!visited.has(outNorm) && !isExcluded(outNorm, excludeRoutes, origin)) {
+          queue.push({ url: outUrl, depth: depth + 1 })
+        }
+      }
+
+      // Queue nav sidebar links
+      const navLinks = scanResult.navLinks || []
+      for (const href of navLinks) {
+        try {
+          const linkUrl = new URL(href, origin).href
+          if (!linkUrl.startsWith(origin)) continue
+          const linkNorm = normalizeUrl(linkUrl)
+          if (!visited.has(linkNorm) && !isExcluded(linkNorm, excludeRoutes, origin)) {
+            queue.push({ url: linkUrl, depth: depth + 1 })
+          }
+        } catch { /* invalid URL */ }
+      }
+    }
+
+    // Rate limit
+    await new Promise((r) => setTimeout(r, 500))
+  }
+
+  return { siteModel, visited }
+}
+
+async function findLoginPage(siteModel, page, origin, timeout) {
+  // Strategy 1: Check already-crawled pages for auth_form pattern
+  for (const [route, scan] of Object.entries(siteModel)) {
+    if (scan.patterns && scan.patterns.some((p) => p.type === "auth_form")) {
+      return { url: scan.url, route, source: "crawl" }
+    }
+  }
+
+  // Strategy 2: Try common login paths
+  const commonPaths = ["/login", "/signin", "/sign-in", "/auth", "/auth/login", "/account/login"]
+  for (const loginPath of commonPaths) {
+    try {
+      const resp = await page.goto(origin + loginPath, { waitUntil: "domcontentloaded", timeout })
+      if (resp && resp.status() < 400) {
+        await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {})
+        const patterns = await matchPatterns(page)
+        if (patterns.some((p) => p.type === "auth_form")) {
+          return { url: page.url(), route: new URL(page.url()).pathname, source: "common_path" }
+        }
+      }
+    } catch { /* path doesn't exist */ }
+  }
+
+  // Strategy 3: Look for login links in already-crawled pages
+  for (const scan of Object.values(siteModel)) {
+    const allLinks = [
+      ...(scan.navLinks || []),
+      ...(scan.outboundRoutes || []).map((r) => origin + r),
+    ]
+    for (const link of allLinks) {
+      const lower = typeof link === "string" ? link.toLowerCase() : ""
+      if (lower.includes("login") || lower.includes("signin") || lower.includes("sign-in")) {
+        const url = link.startsWith("http") ? link : origin + link
+        try {
+          await page.goto(url, { waitUntil: "domcontentloaded", timeout })
+          await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {})
+          const patterns = await matchPatterns(page)
+          if (patterns.some((p) => p.type === "auth_form")) {
+            return { url: page.url(), route: new URL(page.url()).pathname, source: "link_text" }
+          }
+        } catch { /* invalid link */ }
+      }
+    }
+  }
+
+  return null
 }
 
 // ─── Scan Functions ──────────────────────────────────────────────────────────
