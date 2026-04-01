@@ -8,11 +8,14 @@
  *   node scripts/run-e2e.js --url http://localhost:3000 --flow login_flow
  *   node scripts/run-e2e.js --url http://localhost:3000 --tag smoke
  *   node scripts/run-e2e.js --url http://localhost:3000 --stop-on-fail --no-headless
+ *   node scripts/run-e2e.js --url http://localhost:3000 --demo
  */
 
 const fs = require("fs")
 const path = require("path")
 const { chromium } = require("playwright")
+const { capturePageState, hasBlockingOverlay, dismissBlockingOverlays } = require("../lib/page-state")
+const { resolveValue } = require("../lib/resolve-value")
 
 // ─── Load .env ───────────────────────────────────────────────────────────────
 const envPath = path.resolve(process.cwd(), ".env")
@@ -26,6 +29,7 @@ if (fs.existsSync(envPath)) {
 // ─── CLI Args ────────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2)
+const demoMode = args.includes("--demo")
 
 function getArg(name) {
   const idx = args.indexOf(name)
@@ -56,10 +60,13 @@ const config = {
   flowFilter: getArg("--flow") || null,
   tagFilter: getArg("--tag") || null,
   outputDir: getArg("--output-dir") || "./qa-results",
-  headless: !hasFlag("--no-headless"),
+  headless: demoMode ? false : !hasFlag("--no-headless"),
   stopOnFail: hasFlag("--stop-on-fail"),
   heal: hasFlag("--heal"),
   timeout: parseInt(getArg("--timeout") || "10000"),
+  slowMo: parseInt(getArg("--slow-mo") || (demoMode ? "250" : "0"), 10),
+  stepDelay: parseInt(getArg("--step-delay") || (demoMode ? "600" : "0"), 10),
+  demo: demoMode,
   vars: getVars(),
 }
 
@@ -92,18 +99,15 @@ if (config.tagFilter) {
   flows = flows.filter(f => f.tags && f.tags.includes(config.tagFilter))
 }
 
-// ─── Variable Resolver ──────────────────────────────────────────────────────
+// ─── Warn on known-broken flows ─────────────────────────────────────────────
 
-function resolveValue(value, cfg) {
-  if (typeof value !== "string") return value
-  let resolved = value
-  resolved = resolved.replace(/\$EMAIL/g, cfg.email || "")
-  resolved = resolved.replace(/\$PASSWORD/g, cfg.password || "")
-  // Custom vars
-  for (const [key, val] of Object.entries(cfg.vars || {})) {
-    resolved = resolved.replace(new RegExp(`\\$${key}`, "g"), val)
+for (const flow of flows) {
+  if (flow._validationStatus === "failed") {
+    console.log(`  ⚠ Flow "${flow.name}" has known validation issues:`)
+    for (const issue of flow._validationIssues || []) {
+      console.log(`    - ${issue}`)
+    }
   }
-  return resolved
 }
 
 // ─── Selector Resolver (with auto-healing) ─────────────────────────────────
@@ -271,6 +275,29 @@ async function executeAction(page, action, cfg, healContext) {
     ...extra,
   })
 
+  try {
+    return await executeActionInner(page, action, selector, value, cfg, mkResult)
+  } catch (err) {
+    // If blocked by overlay, try dismiss + retry once
+    if (err.message.includes("intercepts pointer events")) {
+      console.log(`      ↳ blocked by overlay, attempting dismiss...`)
+      const dismissed = await dismissBlockingOverlays(page)
+      if (dismissed) {
+        console.log(`      ↳ overlay dismissed, retrying action...`)
+        return await executeActionInner(page, action, selector, value, cfg, mkResult)
+      }
+      // Last resort: force click for click/submit actions
+      if (action.type === "click" || action.type === "submit") {
+        console.log(`      ↳ force-clicking...`)
+        await page.locator(selector).first().click({ force: true, timeout: cfg.timeout })
+        return mkResult()
+      }
+    }
+    throw err
+  }
+}
+
+async function executeActionInner(page, action, selector, value, cfg, mkResult) {
   switch (action.type) {
     case "fill":
       await page.locator(selector).first().fill(value, { timeout: cfg.timeout })
@@ -489,6 +516,26 @@ async function runVerifyCheck(check, page, consoleErrors) {
   return result
 }
 
+// ─── Page Stability ─────────────────────────────────────────────────────────
+
+async function waitForStableState(page) {
+  // Wait for network
+  await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {})
+
+  // Wait for animations to finish (max 2s)
+  await page.evaluate(() => {
+    return new Promise(resolve => {
+      const anims = document.getAnimations()
+      if (anims.length === 0) return resolve()
+      Promise.allSettled(anims.map(a => a.finished)).then(resolve)
+      setTimeout(resolve, 2000)
+    })
+  }).catch(() => {})
+
+  // Brief settle
+  await page.waitForTimeout(300)
+}
+
 // ─── Step Executor ──────────────────────────────────────────────────────────
 
 async function executeStep(page, step, cfg, consoleErrors, flowName) {
@@ -507,6 +554,18 @@ async function executeStep(page, step, cfg, consoleErrors, flowName) {
   const stepStart = Date.now()
 
   try {
+    // Dismiss any blocking overlays before starting this step
+    const preState = await capturePageState(page)
+    if (hasBlockingOverlay(preState)) {
+      console.log(`      ↳ overlay detected before step, dismissing...`)
+      const dismissed = await dismissBlockingOverlays(page)
+      if (dismissed) {
+        console.log(`      ↳ overlay dismissed`)
+      } else {
+        console.log(`      ↳ WARNING: could not dismiss overlay, proceeding anyway`)
+      }
+    }
+
     // Execute all actions in order
     for (let ai = 0; ai < (step.actions || []).length; ai++) {
       const action = step.actions[ai]
@@ -520,11 +579,14 @@ async function executeStep(page, step, cfg, consoleErrors, flowName) {
         ? ` [${actionResult.selectorMethod}]`
         : ""
       console.log(`      ${actionResult.status === "ok" ? "ok" : "!!"} ${actionResult.action} ${actionResult.selector || ""}${val}${key}${healTag}`)
+
+      if (cfg.stepDelay > 0) {
+        await page.waitForTimeout(cfg.stepDelay)
+      }
     }
 
-    // Wait for page to settle
-    await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {})
-    await page.waitForTimeout(500)
+    // Wait for page to stabilize
+    await waitForStableState(page)
 
     // Run verify checks
     if (step.verify && step.verify.length > 0) {
@@ -725,6 +787,9 @@ async function main() {
   console.log(`  URL: ${config.url}`)
   console.log(`  Flows: ${flows.length}`)
   console.log(`  Headless: ${config.headless}`)
+  console.log(`  Slow Mo: ${config.slowMo}ms`)
+  console.log(`  Step Delay: ${config.stepDelay}ms`)
+  if (config.demo) console.log(`  Demo Mode: true`)
   if (config.flowFilter) console.log(`  Filter: --flow ${config.flowFilter}`)
   if (config.tagFilter) console.log(`  Filter: --tag ${config.tagFilter}`)
   console.log("=".repeat(60))
@@ -744,6 +809,7 @@ async function main() {
   console.log("Launching browser...")
   const browser = await chromium.launch({
     headless: config.headless,
+    slowMo: config.slowMo,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   })
 

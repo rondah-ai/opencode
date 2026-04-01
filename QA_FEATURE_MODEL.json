@@ -2,10 +2,10 @@
   "version": "1.0",
   "meta": {
     "generated_by": "init",
-    "learn_sessions": 5,
+    "learn_sessions": 2,
     "confidence": "skeleton",
-    "generated_at": "2026-03-16T11:40:58.939Z",
-    "last_session": "2026-03-16T12:25:39.380Z"
+    "generated_at": "2026-03-31T16:44:41.433Z",
+    "last_session": "2026-03-31T22:55:38.299Z"
   },
   "features": {
     "authentication": {
@@ -51,144 +51,59 @@
         }
       }
     },
-    "call_logs": {
-      "description": "call logs page",
-      "route": "/home/call-logs",
-      "requires": [],
+    "dashboard": {
+      "description": "Rondah AI Console",
+      "route": "/home/dashboard",
+      "requires": [
+        "authenticated"
+      ],
       "capabilities": {
-        "login process": {
-          "interaction": "navigated to /home/call-logs",
+        "view_list": {
+          "interaction": "navigate to page",
           "expected": [
-            "page navigates to /home/call-logs",
-            "form disappears",
-            "input:visible count changes",
-            "button:visible count changes"
+            "table with records visible"
           ],
           "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
+            "table_visible": {
+              "type": "custom_selector_visible",
+              "selector": "table, [role='grid']"
             },
-            "no_console_errors": {
-              "type": "no_console_errors"
+            "has_rows": {
+              "type": "element_appeared",
+              "selector": "tbody tr, [role='row']"
             },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "title": {
-              "type": "landmark_visible",
-              "selector": "title"
+            "no_errors": {
+              "type": "no_errors"
             }
           },
-          "_confidence": "stable",
-          "_observed": 6
-        }
-      },
-      "health": {
-        "route": "/home/call-logs",
-        "landmark": {
-          "selector": "title",
-          "text": "Rondah AI Console"
+          "_confidence": "init",
+          "_observed": 0
         },
-        "checks": [
-          {
-            "type": "no_js_errors"
+        "sort": {
+          "interaction": "click column header to sort",
+          "expected": [
+            "table row order changes",
+            "sort indicator appears"
+          ],
+          "verify": {
+            "rows_changed": {
+              "type": "element_count_changed",
+              "selector": "tbody tr"
+            }
           },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/call-logs"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "title",
-            "text": "Rondah AI Console"
-          }
-        ]
-      }
-    },
-    "appointments_v2": {
-      "description": "appointments v2 page",
-      "route": "/home/appointments-v2",
-      "requires": [],
-      "capabilities": {
+          "preconditions": [
+            "view_list"
+          ],
+          "_confidence": "init",
+          "_observed": 0
+        },
         "action_2": {
-          "interaction": "navigated to /home/appointments-v2",
+          "interaction": "navigated to /home/dashboard",
           "expected": [
-            "page navigates to /home/appointments-v2",
-            "tbody tr disappears",
-            "table disappears",
-            "input:visible count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "title": {
-              "type": "landmark_visible",
-              "selector": "title"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/appointments-v2",
-        "landmark": {
-          "selector": "title",
-          "text": "Rondah AI Console"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/appointments-v2"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "title",
-            "text": "Rondah AI Console"
-          }
-        ]
-      }
-    },
-    "reports": {
-      "description": "reports page",
-      "route": "/home/reports",
-      "requires": [],
-      "capabilities": {
-        "action_4": {
-          "interaction": "navigated to /home/reports",
-          "expected": [
-            "page navigates to /home/reports",
+            "page navigates to /home/dashboard",
             "tbody tr count changes",
-            "input:visible count changes",
-            "button:visible count changes"
+            "[role='dialog'] disappears",
+            "[role='alert'] count changes"
           ],
           "verify": {
             "no_js_errors": {
@@ -208,8 +123,114 @@
               "selector": "h1"
             }
           },
-          "_confidence": "observed_2x",
-          "_observed": 2
+          "_confidence": "observed_1x",
+          "_observed": 1
+        }
+      },
+      "health": {
+        "route": "/home/dashboard",
+        "landmark": {
+          "selector": "h1",
+          "text": "Analytics"
+        },
+        "checks": [
+          {
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
+          },
+          {
+            "type": "url_is",
+            "value": "/home/dashboard"
+          },
+          {
+            "type": "landmark_visible",
+            "selector": "h1",
+            "text": "Analytics"
+          }
+        ]
+      }
+    },
+    "practice": {
+      "description": "Rondah AI Console",
+      "route": "/home/notifications/practice",
+      "requires": [
+        "authenticated"
+      ],
+      "capabilities": {
+        "submit_form": {
+          "interaction": "fill all required fields, click submit",
+          "expected": [
+            "form submitted successfully",
+            "success toast or redirect"
+          ],
+          "verify": {
+            "toast_appeared": {
+              "type": "toast_appeared"
+            },
+            "no_errors": {
+              "type": "no_errors"
+            }
+          },
+          "test_data": {
+            "field_value": "TODO"
+          },
+          "_confidence": "init",
+          "_observed": 0
+        },
+        "submit_invalid": {
+          "interaction": "submit form with empty required fields",
+          "expected": [
+            "validation errors shown on required fields"
+          ],
+          "verify": {
+            "error_shown": {
+              "type": "element_appeared",
+              "selector": "[role='alert'], .error, .text-red-500"
+            }
+          },
+          "_confidence": "init",
+          "_observed": 0
+        }
+      }
+    },
+    "reports": {
+      "description": "reports page",
+      "route": "/home/reports",
+      "requires": [],
+      "capabilities": {
+        "action_1": {
+          "interaction": "navigated to /home/reports",
+          "expected": [
+            "page navigates to /home/reports",
+            "tbody tr appears",
+            "table appears",
+            "input:visible count changes"
+          ],
+          "verify": {
+            "no_js_errors": {
+              "type": "no_js_errors"
+            },
+            "no_console_errors": {
+              "type": "no_console_errors"
+            },
+            "no_error_alerts": {
+              "type": "no_error_alerts"
+            },
+            "url_is": {
+              "type": "url_is"
+            },
+            "h1": {
+              "type": "landmark_visible",
+              "selector": "h1"
+            }
+          },
+          "_confidence": "observed_1x",
+          "_observed": 1
         }
       },
       "health": {
@@ -240,207 +261,18 @@
         ]
       }
     },
-    "voicemails": {
-      "description": "voicemails page",
-      "route": "/home/voicemails",
-      "requires": [],
-      "capabilities": {
-        "action_5": {
-          "interaction": "navigated to /home/voicemails",
-          "expected": [
-            "page navigates to /home/voicemails",
-            "input:visible count changes",
-            "button:visible count changes",
-            "thead th count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "title": {
-              "type": "landmark_visible",
-              "selector": "title"
-            }
-          },
-          "_confidence": "observed_2x",
-          "_observed": 2
-        }
-      },
-      "health": {
-        "route": "/home/voicemails",
-        "landmark": {
-          "selector": "title",
-          "text": "Rondah AI Console"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/voicemails"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "title",
-            "text": "Rondah AI Console"
-          }
-        ]
-      }
-    },
-    "notifications": {
-      "description": "notifications page",
-      "route": "/home/notifications",
-      "requires": [],
-      "capabilities": {
-        "action_6": {
-          "interaction": "navigated to /home/notifications",
-          "expected": [
-            "page navigates to /home/notifications",
-            "tbody tr disappears",
-            "table disappears",
-            "form appears"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/notifications",
-        "landmark": {
-          "selector": "h1",
-          "text": "Notifications Config"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/notifications"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "Notifications Config"
-          }
-        ]
-      }
-    },
-    "system_health": {
-      "description": "system health page",
-      "route": "/home/admin-hub/system-health",
-      "requires": [],
-      "capabilities": {
-        "action_7": {
-          "interaction": "navigated to /home/admin-hub/system-health",
-          "expected": [
-            "page navigates to /home/admin-hub/system-health",
-            "tbody tr appears",
-            "table appears",
-            "form disappears"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h2": {
-              "type": "landmark_visible",
-              "selector": "h2"
-            }
-          },
-          "_confidence": "observed_3x",
-          "_observed": 3
-        }
-      },
-      "health": {
-        "route": "/home/admin-hub/system-health",
-        "landmark": {
-          "selector": "h2",
-          "text": "Availability Audit"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/admin-hub/system-health"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h2",
-            "text": "Availability Audit"
-          }
-        ]
-      }
-    },
     "practice_details": {
       "description": "practice details page",
       "route": "/home/configurations/practice-details",
       "requires": [],
       "capabilities": {
-        "action_8": {
+        "action_1": {
           "interaction": "navigated to /home/configurations/practice-details",
           "expected": [
             "page navigates to /home/configurations/practice-details",
-            "tbody tr disappears",
-            "table disappears",
-            "form appears"
+            "form appears",
+            "input:visible count changes",
+            "button:visible count changes"
           ],
           "verify": {
             "no_js_errors": {
@@ -488,757 +320,6 @@
             "type": "landmark_visible",
             "selector": "h1",
             "text": "Practice Details"
-          }
-        ]
-      }
-    },
-    "pms_connector": {
-      "description": "pms connector page",
-      "route": "/home/configurations/pms-connector",
-      "requires": [],
-      "capabilities": {
-        "action_9": {
-          "interaction": "navigated to /home/configurations/pms-connector",
-          "expected": [
-            "page navigates to /home/configurations/pms-connector",
-            "form disappears",
-            "input:visible count changes",
-            "button:visible count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/pms-connector",
-        "landmark": {
-          "selector": "h1",
-          "text": "PMS Connector"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/pms-connector"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "PMS Connector"
-          }
-        ]
-      }
-    },
-    "server": {
-      "description": "server page",
-      "route": "/home/configurations/server",
-      "requires": [],
-      "capabilities": {
-        "action_10": {
-          "interaction": "navigated to /home/configurations/server",
-          "expected": [
-            "page navigates to /home/configurations/server",
-            "button:visible count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/server",
-        "landmark": {
-          "selector": "h1",
-          "text": "Server Configuration"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/server"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "Server Configuration"
-          }
-        ]
-      }
-    },
-    "operatories": {
-      "description": "operatories page",
-      "route": "/home/configurations/operatories",
-      "requires": [],
-      "capabilities": {
-        "action_11": {
-          "interaction": "navigated to /home/configurations/operatories",
-          "expected": [
-            "page navigates to /home/configurations/operatories",
-            "tbody tr appears",
-            "table appears",
-            "input:visible count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h2": {
-              "type": "landmark_visible",
-              "selector": "h2"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/operatories",
-        "landmark": {
-          "selector": "h2",
-          "text": "Operatories"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/operatories"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h2",
-            "text": "Operatories"
-          }
-        ]
-      }
-    },
-    "providers": {
-      "description": "providers page",
-      "route": "/home/configurations/providers",
-      "requires": [],
-      "capabilities": {
-        "action_12": {
-          "interaction": "navigated to /home/configurations/providers",
-          "expected": [
-            "page navigates to /home/configurations/providers",
-            "button:visible count changes",
-            "thead th count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h2": {
-              "type": "landmark_visible",
-              "selector": "h2"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/providers",
-        "landmark": {
-          "selector": "h2",
-          "text": "Providers"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/providers"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h2",
-            "text": "Providers"
-          }
-        ]
-      }
-    },
-    "appointment_types": {
-      "description": "appointment types page",
-      "route": "/home/configurations/appointment-types",
-      "requires": [],
-      "capabilities": {
-        "action_13": {
-          "interaction": "navigated to /home/configurations/appointment-types",
-          "expected": [
-            "page navigates to /home/configurations/appointment-types",
-            "tbody tr count changes",
-            "button:visible count changes",
-            "thead th count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "title": {
-              "type": "landmark_visible",
-              "selector": "title"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/appointment-types",
-        "landmark": {
-          "selector": "title",
-          "text": "Rondah AI Console"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/appointment-types"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "title",
-            "text": "Rondah AI Console"
-          }
-        ]
-      }
-    },
-    "appointment_configs": {
-      "description": "appointment configs page",
-      "route": "/home/configurations/appointment-configs",
-      "requires": [],
-      "capabilities": {
-        "action_14": {
-          "interaction": "navigated to /home/configurations/appointment-configs",
-          "expected": [
-            "page navigates to /home/configurations/appointment-configs",
-            "tbody tr count changes",
-            "button:visible count changes",
-            "thead th count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h2": {
-              "type": "landmark_visible",
-              "selector": "h2"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/appointment-configs",
-        "landmark": {
-          "selector": "h2",
-          "text": "Appointment Configs"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/appointment-configs"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h2",
-            "text": "Appointment Configs"
-          }
-        ]
-      }
-    },
-    "rescheduling": {
-      "description": "rescheduling page",
-      "route": "/home/configurations/rescheduling",
-      "requires": [],
-      "capabilities": {
-        "action_15": {
-          "interaction": "navigated to /home/configurations/rescheduling",
-          "expected": [
-            "page navigates to /home/configurations/rescheduling",
-            "tbody tr disappears",
-            "table disappears",
-            "form appears"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/rescheduling",
-        "landmark": {
-          "selector": "h1",
-          "text": "Rescheduling Config"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/rescheduling"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "Rescheduling Config"
-          }
-        ]
-      }
-    },
-    "pms_resources": {
-      "description": "pms resources page",
-      "route": "/home/configurations/pms-resources",
-      "requires": [],
-      "capabilities": {
-        "action_16": {
-          "interaction": "navigated to /home/configurations/pms-resources",
-          "expected": [
-            "page navigates to /home/configurations/pms-resources",
-            "tbody tr appears",
-            "table appears",
-            "form disappears"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h2": {
-              "type": "landmark_visible",
-              "selector": "h2"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/pms-resources",
-        "landmark": {
-          "selector": "h2",
-          "text": "PMS Resources"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/pms-resources"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h2",
-            "text": "PMS Resources"
-          }
-        ]
-      }
-    },
-    "phone_numbers": {
-      "description": "phone numbers page",
-      "route": "/home/configurations/phone-numbers",
-      "requires": [],
-      "capabilities": {
-        "action_17": {
-          "interaction": "navigated to /home/configurations/phone-numbers",
-          "expected": [
-            "page navigates to /home/configurations/phone-numbers",
-            "tbody tr count changes",
-            "input:visible count changes",
-            "button:visible count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h2": {
-              "type": "landmark_visible",
-              "selector": "h2"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/phone-numbers",
-        "landmark": {
-          "selector": "h2",
-          "text": "Phone Numbers"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/phone-numbers"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h2",
-            "text": "Phone Numbers"
-          }
-        ]
-      }
-    },
-    "phone_configs": {
-      "description": "phone configs page",
-      "route": "/home/configurations/phone-configs",
-      "requires": [],
-      "capabilities": {
-        "action_18": {
-          "interaction": "navigated to /home/configurations/phone-configs",
-          "expected": [
-            "page navigates to /home/configurations/phone-configs",
-            "tbody tr disappears",
-            "table disappears",
-            "form appears"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h2": {
-              "type": "landmark_visible",
-              "selector": "h2"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/phone-configs",
-        "landmark": {
-          "selector": "h2",
-          "text": "Phone Configuration"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/phone-configs"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h2",
-            "text": "Phone Configuration"
-          }
-        ]
-      }
-    },
-    "knowledge_base": {
-      "description": "knowledge base page",
-      "route": "/home/configurations/knowledge-base",
-      "requires": [],
-      "capabilities": {
-        "action_19": {
-          "interaction": "navigated to /home/configurations/knowledge-base",
-          "expected": [
-            "page navigates to /home/configurations/knowledge-base",
-            "form disappears",
-            "input:visible count changes",
-            "button:visible count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/knowledge-base",
-        "landmark": {
-          "selector": "h1",
-          "text": "Knowledge Base"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/knowledge-base"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "Knowledge Base"
-          }
-        ]
-      }
-    },
-    "calendar_hub": {
-      "description": "calendar hub page",
-      "route": "/home/configurations/calendar-hub",
-      "requires": [],
-      "capabilities": {
-        "action_20": {
-          "interaction": "navigated to /home/configurations/calendar-hub",
-          "expected": [
-            "page navigates to /home/configurations/calendar-hub",
-            "button:visible count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
-      "health": {
-        "route": "/home/configurations/calendar-hub",
-        "landmark": {
-          "selector": "h1",
-          "text": "Calendar Hub"
-        },
-        "checks": [
-          {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/calendar-hub"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "Calendar Hub"
           }
         ]
       }

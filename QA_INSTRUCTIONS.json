@@ -25,7 +25,7 @@
   "timing": {
     "slow_transitions": [],
     "toast_appear_delay": 3000,
-    "page_load_buffer": 1000
+    "page_load_buffer": 1500
   },
   "known_issues": [],
   "auth": {
@@ -35,5 +35,7 @@
     "mfa": false
   },
   "environment_overrides": {},
-  "agent_hints": []
+  "agent_hints": [
+    "Pages are slow to load (~5s average). Be patient with transitions."
+  ]
 }
