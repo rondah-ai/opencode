@@ -406,6 +406,17 @@ async function main() {
   let flowStartSnapshot = null
   const recordedFlows = []
 
+  // Guardrail state (Phase 2)
+  let overlayWarningAcknowledged = false
+  let largeStepWarningAcknowledged = false
+
+  // Split state (Phase 3)
+  let splitPreview = null
+  let forceSingleStepOnce = false
+
+  // Shutdown state (Phase 4)
+  let normalShutdown = false
+
   // Auto-save every 30 seconds
   const autoSave = setInterval(() => {
     saveSession({
@@ -419,6 +430,7 @@ async function main() {
   }, 30000)
 
   // Poll for events every 500ms
+  let lastPolledUrl = page.url()
   const poller = setInterval(async () => {
     try {
       const events = await page.evaluate(() => {
@@ -426,6 +438,22 @@ async function main() {
         return []
       })
       if (events && events.length > 0) {
+        // Capture snapshot on navigation events (for accurate split metadata)
+        for (const ev of events) {
+          if (ev.type === "navigation") {
+            try { ev._snapshotAfter = await captureState(page, consoleErrorCount) } catch {}
+          }
+        }
+
+        // Tag URL changes that happen without an explicit navigation event (SPA transitions)
+        const currentUrl = page.url()
+        const batchHasNavigation = events.some(ev => ev.type === "navigation")
+        if (currentUrl !== lastPolledUrl && !batchHasNavigation) {
+          events[0]._urlChanged = true
+          try { events[0]._snapshotAfter = await captureState(page, consoleErrorCount) } catch {}
+        }
+        lastPolledUrl = currentUrl
+
         pendingEvents.push(...events)
         displayEvents(events)
       }
@@ -444,6 +472,8 @@ async function main() {
   console.log("  [r]     Start recording E2E flow")
   console.log("  [f]     Finish recording E2E flow")
   console.log("  [v]     Add verify check to last flow step")
+  console.log("  [x]     Auto-dismiss blocking overlay/modal/dropdown")
+  console.log("  [k]     Keep pending auto-split as one step")
   console.log("  [n]     Name last capability")
   console.log("  [e]     Record edge case")
   console.log("  [s]     Skip / discard pending events")
@@ -453,6 +483,110 @@ async function main() {
 
   // Wrap in a promise so main() doesn't resolve until session ends
   await new Promise((resolveSession) => {
+
+  // ── Helpers for flow finalization (Phase 4) ──
+
+  function resetFlowState() {
+    recordingFlow = false
+    currentFlowName = null
+    currentFlowSteps = []
+    flowStartSnapshot = null
+  }
+
+  function askLine(prompt) {
+    return new Promise(resolve => rl.question(prompt, answer => resolve((answer || "").trim())))
+  }
+
+  function askChoice(prompt) {
+    return new Promise(resolve => rl.question(prompt, answer => resolve((answer || "").trim().toLowerCase())))
+  }
+
+  async function finalizeFlow(name, opts = {}) {
+    const { skipValidation = false, autoSave = false } = opts
+
+    if (currentFlowSteps.length === 0) {
+      console.log("  (no steps recorded, discarding flow)")
+      resetFlowState()
+      return null
+    }
+
+    const flow = {
+      name,
+      startRoute: flowStartSnapshot?.route,
+      steps: currentFlowSteps,
+      stepCount: currentFlowSteps.length,
+      recordedAt: new Date().toISOString(),
+    }
+
+    // Validate unless explicitly skipped
+    if (!skipValidation) {
+      console.log(`\n  Validating "${name}"... (replaying ${flow.steps.length} steps)`)
+      try {
+        const { validateFlow, applyFixes } = require("../lib/flow-validator")
+        const { executeRecordedAction } = require("../lib/action-executor")
+        const validation = await validateFlow(flow, config, executeRecordedAction, authenticate)
+
+        if (validation.valid) {
+          console.log(`  ✓ Validation PASSED\n`)
+        } else {
+          console.log(`  ✗ Validation FAILED — ${validation.issues.length} issue(s):`)
+          for (const issue of validation.issues) {
+            console.log(`    Step ${issue.step}: ${issue.detail}`)
+          }
+
+          if (!autoSave) {
+            if (validation.fixes.length > 0) {
+              console.log(`\n  Auto-fix available:`)
+              for (const fix of validation.fixes) {
+                console.log(`    → Insert "${fix.action.type} ${fix.action.key || ""}" before Step ${fix.beforeStep}`)
+              }
+              console.log("")
+            }
+
+            const choice = await askChoice(
+              validation.fixes.length > 0
+                ? "  Apply fixes [f], save anyway [s], or discard [d]? "
+                : "  Save anyway [s] or discard [d]? "
+            )
+
+            if (choice === "f" && validation.fixes.length > 0) {
+              const fixed = applyFixes(flow, validation.fixes)
+              fixed._validationStatus = "fixed"
+              fixed._validationIssues = validation.issues.map(i => `${i.type} at step ${i.step}`)
+              recordedFlows.push(fixed)
+              console.log(`  FLOW SAVED (with fixes): "${name}" (${fixed.steps.length} steps)\n`)
+              resetFlowState()
+              return fixed
+            }
+
+            if (choice === "s") {
+              flow._validationStatus = "failed"
+              flow._validationIssues = validation.issues.map(i => `${i.type} at step ${i.step}`)
+              recordedFlows.push(flow)
+              console.log(`  FLOW SAVED (with known issues): "${name}"\n`)
+              resetFlowState()
+              return flow
+            }
+
+            console.log("  Flow discarded.\n")
+            resetFlowState()
+            return null
+          }
+
+          // autoSave path (from [d] exit) — save with warning tag
+          flow._validationStatus = "failed"
+          flow._validationIssues = validation.issues.map(i => `${i.type} at step ${i.step}`)
+        }
+      } catch (err) {
+        console.log(`  ⚠ Validation skipped (error: ${err.message})`)
+      }
+    }
+
+    recordedFlows.push(flow)
+    console.log(`  FLOW SAVED: "${name}" (${flow.steps.length} steps)\n`)
+    resetFlowState()
+    return flow
+  }
 
   rl.on("line", async (line) => {
     const cmd = line.trim().toLowerCase()
@@ -471,6 +605,35 @@ async function main() {
       return
     }
 
+    // ── [x] Auto-dismiss blocking overlay ──
+    if (cmd === "x") {
+      const { capturePageState, hasBlockingOverlay, dismissBlockingOverlays } = require("../lib/page-state")
+      const state = await capturePageState(page)
+      if (!hasBlockingOverlay(state)) {
+        console.log("  (no blocking overlay detected)\n")
+        return
+      }
+      const dismissed = await dismissBlockingOverlays(page)
+      if (dismissed) {
+        console.log("  ✓ Overlay dismissed. Press [Enter] to record step.\n")
+      } else {
+        console.log("  ✗ Could not dismiss overlay. Close it manually in the browser.\n")
+      }
+      return
+    }
+
+    // ── [k] Keep pending split as single step ──
+    if (cmd === "k") {
+      if (splitPreview) {
+        console.log("  Keeping as single step. Press [Enter] to commit.\n")
+        forceSingleStepOnce = true
+        splitPreview = null
+      } else {
+        console.log("  (no pending split to cancel)\n")
+      }
+      return
+    }
+
     // ── [f] Finish recording E2E flow ──
     if (cmd === "f") {
       if (!recordingFlow) {
@@ -480,32 +643,14 @@ async function main() {
 
       if (currentFlowSteps.length === 0) {
         console.log("  No steps recorded. Flow discarded.\n")
-        recordingFlow = false
-        currentFlowName = null
-        currentFlowSteps = []
-        flowStartSnapshot = null
+        resetFlowState()
         return
       }
 
-      // Ask for flow name
-      recordingFlow = false
-      rl.question("  Name this flow: ", (answer) => {
-        const name = answer.trim() || `flow_${recordedFlows.length + 1}`
-        const flow = {
-          name,
-          startRoute: flowStartSnapshot.route,
-          steps: currentFlowSteps,
-          stepCount: currentFlowSteps.length,
-          recordedAt: new Date().toISOString(),
-        }
-        recordedFlows.push(flow)
-        console.log(`  FLOW SAVED: "${name}" (${currentFlowSteps.length} steps)`)
-        console.log("")
-
-        currentFlowName = null
-        currentFlowSteps = []
-        flowStartSnapshot = null
-      })
+      // Ask for flow name, then validate and save
+      const answer = await askLine("  Name this flow: ")
+      const name = answer.trim() || `flow_${recordedFlows.length + 1}`
+      await finalizeFlow(name)
       return
     }
 
@@ -570,23 +715,15 @@ async function main() {
     }
 
     if (cmd === "d" || cmd === "done") {
-      // If recording a flow, auto-finish it
+      // If recording a flow, auto-finish with validation
       if (recordingFlow && currentFlowSteps.length > 0) {
         const name = `flow_${recordedFlows.length + 1}`
-        recordedFlows.push({
-          name,
-          startRoute: flowStartSnapshot.route,
-          steps: currentFlowSteps,
-          stepCount: currentFlowSteps.length,
-          recordedAt: new Date().toISOString(),
-        })
-        console.log(`  Auto-finished flow: "${name}" (${currentFlowSteps.length} steps)`)
-        recordingFlow = false
-        currentFlowSteps = []
-        flowStartSnapshot = null
+        console.log(`  Auto-finishing flow: "${name}"`)
+        await finalizeFlow(name, { autoSave: true })
       }
 
-      // Finish session
+      // Finish session (mark normal so close handler skips duplicate persistence)
+      normalShutdown = true
       clearInterval(poller)
       clearInterval(autoSave)
       rl.close()
@@ -682,29 +819,85 @@ async function main() {
       const route = new URL(page.url()).pathname
 
       if (recordingFlow) {
-        // ── Flow step mode ──
-        const collapsed = collapseEvents(pendingEvents, config)
-        const step = {
-          stepNumber: currentFlowSteps.length + 1,
-          route,
-          description,
-          actions: collapsed,
-          rawEventCount: pendingEvents.length,
-          landmark: landmark || undefined,
-          stateAfter: currentSnapshot,
-          verify: [],
-          timestamp: Date.now(),
-        }
-        currentFlowSteps.push(step)
+        // ── Guardrail: warn on blocking overlay ──
+        const { capturePageState, hasBlockingOverlay, getBlockingElement } = require("../lib/page-state")
+        const pageState = await capturePageState(page)
 
-        console.log(`  FLOW STEP ${step.stepNumber}: ${description}`)
-        console.log(`    Route: ${route}`)
-        for (const action of collapsed) {
-          const val = action.value ? ` "${action.value}"` : ""
-          console.log(`    → ${action.type} ${action.selector || ""}${val}`)
+        if (hasBlockingOverlay(pageState) && !overlayWarningAcknowledged) {
+          const blocker = getBlockingElement(pageState)
+          const label = blocker.title || blocker.triggerText || blocker.type || "overlay"
+          console.log(`\n  ⚠ WARNING: ${blocker.type} is still open ("${label}")`)
+          console.log(`    This will block clicks in the next step.`)
+          console.log(`    → Close it in the browser, then press [Enter]`)
+          console.log(`    → Or press [x] to auto-dismiss and continue`)
+          console.log(`    → Or press [Enter] again to record anyway\n`)
+          overlayWarningAcknowledged = true
+          return
         }
-        if (landmark) {
-          console.log(`    landmark: ${landmark.selector} "${landmark.text}"`)
+        overlayWarningAcknowledged = false
+
+        // ── Guardrail: warn on very large steps ──
+        if (pendingEvents.length > 8 && !largeStepWarningAcknowledged) {
+          console.log(`\n  ⚠ ${pendingEvents.length} actions in this step — that's a lot.`)
+          console.log(`    Consider using [s] to discard and re-record as smaller steps.`)
+          console.log(`    Press [Enter] again to record anyway.\n`)
+          largeStepWarningAcknowledged = true
+          return
+        }
+        largeStepWarningAcknowledged = false
+
+        // ── Flow step mode (with split detection) ──
+        const { splitOnNavigation, getGroupSnapshot, getGroupRoute } = require("../lib/step-splitter")
+
+        // Check for navigation-based split (skip if user chose [k])
+        if (!forceSingleStepOnce && !splitPreview) {
+          const groups = splitOnNavigation(pendingEvents)
+          if (groups.length > 1) {
+            console.log(`\n  Auto-splitting into ${groups.length} steps (navigation boundaries detected):`)
+            for (let g = 0; g < groups.length; g++) {
+              const gRoute = getGroupRoute(groups[g], route)
+              console.log(`    Step ${currentFlowSteps.length + g + 1}: ${describeEvents(groups[g])} → ${gRoute}`)
+            }
+            console.log(`\n    Press [Enter] to accept split  |  [k] to keep as single step\n`)
+            splitPreview = { groups }
+            return
+          }
+        }
+
+        // Accept a pending split or commit as single step
+        const groups = splitPreview ? splitPreview.groups : [pendingEvents]
+        splitPreview = null
+        forceSingleStepOnce = false
+
+        // Build and commit step(s)
+        for (const group of groups) {
+          const groupSnapshot = getGroupSnapshot(group, currentSnapshot)
+          const groupRoute = getGroupRoute(group, route)
+          const groupLandmark = pickLandmark(groupSnapshot.landmarks || {})
+          const collapsed = collapseEvents(group, config)
+
+          const step = {
+            stepNumber: currentFlowSteps.length + 1,
+            route: groupRoute,
+            description: describeEvents(group),
+            actions: collapsed,
+            rawEventCount: group.length,
+            landmark: groupLandmark || undefined,
+            stateAfter: groupSnapshot,
+            verify: [],
+            timestamp: Date.now(),
+          }
+          currentFlowSteps.push(step)
+
+          console.log(`  FLOW STEP ${step.stepNumber}: ${step.description}`)
+          console.log(`    Route: ${groupRoute}`)
+          for (const action of collapsed) {
+            const val = action.value ? ` "${action.value}"` : ""
+            console.log(`    → ${action.type} ${action.selector || ""}${val}`)
+          }
+          if (groupLandmark) {
+            console.log(`    landmark: ${groupLandmark.selector} "${groupLandmark.text}"`)
+          }
         }
         console.log(`    (press [v] to add verify checks, [Enter] for next step)\n`)
 
@@ -845,8 +1038,45 @@ async function main() {
     }
   })
 
-  // Also resolve if stdin closes unexpectedly (e.g. pipe closed)
+  // Also resolve if stdin closes unexpectedly (e.g. pipe closed, Ctrl+C)
   rl.on("close", () => {
+    // On normal [d] shutdown, persistence and cleanup are handled by the [d] handler.
+    // Do nothing here — [d] calls resolveSession() after its saves finish.
+    if (normalShutdown) return
+
+    // Interrupted close — save in-progress flow as unvalidated draft
+    if (recordingFlow && currentFlowSteps.length > 0) {
+      const name = `_draft_flow_${recordedFlows.length + 1}`
+      recordedFlows.push({
+        name,
+        startRoute: flowStartSnapshot?.route,
+        steps: currentFlowSteps,
+        stepCount: currentFlowSteps.length,
+        recordedAt: new Date().toISOString(),
+        _validationStatus: "skipped",
+        _validationIssues: ["draft saved during interrupted close"],
+      })
+      console.log(`  ⚠ In-progress flow saved as "${name}" (unvalidated draft)`)
+      resetFlowState()
+    }
+
+    // Persist flows to disk (only runs on interrupted close)
+    if (recordedFlows.length > 0) {
+      try {
+        const flowsPath = path.join(path.dirname(config.modelPath), "QA_RECORDED_FLOWS.json")
+        let existingFlows = { version: "1.0", flows: [] }
+        if (fs.existsSync(flowsPath)) {
+          try { existingFlows = JSON.parse(fs.readFileSync(flowsPath, "utf8")) } catch {}
+        }
+        existingFlows.flows.push(...recordedFlows)
+        existingFlows.lastUpdated = new Date().toISOString()
+        fs.writeFileSync(flowsPath, JSON.stringify(existingFlows, null, 2))
+        console.log(`  Flows saved to disk: ${flowsPath}`)
+      } catch (err) {
+        console.log(`  ⚠ Could not save flows: ${err.message}`)
+      }
+    }
+
     clearInterval(poller)
     clearInterval(autoSave)
     browser.close().catch(() => {})

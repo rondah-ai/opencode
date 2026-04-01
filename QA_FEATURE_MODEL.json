@@ -2,10 +2,10 @@
   "version": "1.0",
   "meta": {
     "generated_by": "init",
-    "learn_sessions": 1,
+    "learn_sessions": 2,
     "confidence": "skeleton",
     "generated_at": "2026-03-31T16:44:41.433Z",
-    "last_session": "2026-03-31T21:12:24.636Z"
+    "last_session": "2026-03-31T22:55:38.299Z"
   },
   "features": {
     "authentication": {
@@ -257,6 +257,69 @@
             "type": "landmark_visible",
             "selector": "h1",
             "text": "Reports"
+          }
+        ]
+      }
+    },
+    "practice_details": {
+      "description": "practice details page",
+      "route": "/home/configurations/practice-details",
+      "requires": [],
+      "capabilities": {
+        "action_1": {
+          "interaction": "navigated to /home/configurations/practice-details",
+          "expected": [
+            "page navigates to /home/configurations/practice-details",
+            "form appears",
+            "input:visible count changes",
+            "button:visible count changes"
+          ],
+          "verify": {
+            "no_js_errors": {
+              "type": "no_js_errors"
+            },
+            "no_console_errors": {
+              "type": "no_console_errors"
+            },
+            "no_error_alerts": {
+              "type": "no_error_alerts"
+            },
+            "url_is": {
+              "type": "url_is"
+            },
+            "h1": {
+              "type": "landmark_visible",
+              "selector": "h1"
+            }
+          },
+          "_confidence": "observed_1x",
+          "_observed": 1
+        }
+      },
+      "health": {
+        "route": "/home/configurations/practice-details",
+        "landmark": {
+          "selector": "h1",
+          "text": "Practice Details"
+        },
+        "checks": [
+          {
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
+          },
+          {
+            "type": "url_is",
+            "value": "/home/configurations/practice-details"
+          },
+          {
+            "type": "landmark_visible",
+            "selector": "h1",
+            "text": "Practice Details"
           }
         ]
       }

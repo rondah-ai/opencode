@@ -38,9 +38,9 @@ opencode/                              consumer-repo/
 | Script | Purpose |
 |--------|---------|
 | `init.js` | Crawl app, discover routes, build `QA_FEATURE_MODEL.json` |
-| `learn.js` | Interactive session — record capabilities and E2E flows |
+| `learn.js` | Interactive session — record capabilities and E2E flows with step guardrails and validation |
 | `run-test.js` | Health check runner — landmark-based page verification |
-| `run-e2e.js` | E2E replay runner — replay recorded flows with auto-healing |
+| `run-e2e.js` | E2E replay runner — replay recorded flows with auto-healing, overlay recovery, and optional visible pacing |
 | `migrate.js` | Convert legacy `QA_ANCHOR_POINTS.json` + `QA_FLOWS.json` to new format |
 | `generate-pr-comment.js` | Generate GitHub PR comments from test results |
 
@@ -78,6 +78,19 @@ qa-agent test --url <url> --suite <smoke|full>
 ```
 Primary selector → Fallback selectors → Text-based selector → Fuzzy healing
 ```
+
+It also adds replay resilience:
+
+- detects and dismisses blocking overlays before each step
+- retries clicks that were intercepted by overlays
+- waits for network and animations to settle between steps
+- warns when a flow was previously saved with known validation issues
+
+For human-observable runs, `run-e2e.js` also supports:
+
+- `--slow-mo <ms>` to slow each Playwright browser action
+- `--step-delay <ms>` to pause after each recorded action
+- `--demo` as a readable visible-browser preset
 
 **Fuzzy healing strategies:**
 
@@ -136,6 +149,9 @@ node node_modules/@rondah-ai/qa-agent/scripts/run-test.js --suite smoke
 
 # E2E replay — replay recorded flows
 node node_modules/@rondah-ai/qa-agent/scripts/run-e2e.js
+
+# Visible, slower replay for debugging or demos
+node node_modules/@rondah-ai/qa-agent/scripts/run-e2e.js --demo
 
 # Auto-heal — fix broken selectors after UI changes
 node node_modules/@rondah-ai/qa-agent/scripts/run-e2e.js --heal

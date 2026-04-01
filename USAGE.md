@@ -194,10 +194,13 @@ This is how the agent learns what each page looks like and upgrades capability c
 
 Pressing `Enter` captures the pending interactions as a **flow step**:
 
-1. Collapses raw events into playable actions (`click`, `fill`, `select`, `waitForURL`)
-2. Snapshots the current page state
-3. Adds the step to the flow being recorded
-4. Displays the actions that were captured
+1. Checks whether a blocking overlay, modal, or dropdown is still open
+2. Warns if the step is unusually large
+3. Detects navigation boundaries and may preview an automatic split
+4. Collapses raw events into playable actions (`click`, `fill`, `select`, `waitForURL`)
+5. Snapshots the current page state
+6. Adds the step to the flow being recorded
+7. Displays the actions that were captured
 
 ```
 FLOW STEP 2: click a "Reports", navigate to /home/reports
@@ -209,6 +212,47 @@ FLOW STEP 2: click a "Reports", navigate to /home/reports
 ```
 
 If no interactions are pending, it prints `(no interactions to record)`.
+
+#### `x` — Auto-dismiss blocking overlay
+
+If a dropdown, modal, or backdrop is still open, press `x` to have the recorder try:
+
+1. `Escape`
+2. Clicking the backdrop overlay
+
+Example:
+
+```text
+⚠ WARNING: dropdown is still open ("Select practice")
+  This will block clicks in the next step.
+  → Close it in the browser, then press [Enter]
+  → Or press [x] to auto-dismiss and continue
+
+[x]
+✓ Overlay dismissed. Press [Enter] to record step.
+```
+
+This is useful when you opened a menu for exploration but do not want that open state to break the next step.
+
+#### `k` — Keep pending auto-split as one step
+
+If Rondar detects multiple navigation boundaries in one pending batch, it previews an auto-split before committing:
+
+```text
+Auto-splitting into 3 steps (navigation boundaries detected):
+  Step 2: click a "Reports", navigate to /home/reports → /home/reports
+  Step 3: click a "Voicemails", navigate to /home/voicemails → /home/voicemails
+  Step 4: click a "Notifications", navigate to /home/notifications → /home/notifications
+
+Press [Enter] to accept split  |  [k] to keep as single step
+```
+
+Press `k` if you intentionally want to keep the full batch as one step:
+
+```text
+[k]
+Keeping as single step. Press [Enter] to commit.
+```
 
 #### `r` — Start recording an E2E flow
 
@@ -232,15 +276,36 @@ You cannot nest recordings — pressing `r` while already recording has no effec
 Finishes the current flow recording:
 
 1. Prompts you to name the flow: `Name this flow: ` (defaults to `flow_{N}`)
-2. Saves the flow with all recorded steps
-3. Returns to health checkpoint mode
+2. Replays the flow in a fresh headless browser for validation
+3. If validation passes, saves the flow
+4. If validation fails and an auto-fix is available, lets you:
+   - apply fixes and save
+   - save with known issues
+   - discard
+5. Returns to health checkpoint mode
 
 ```
 Name this flow: login and navigate
+Validating "login and navigate"... (replaying 3 steps)
+✓ Validation PASSED
 FLOW SAVED: "login and navigate" (3 steps)
 ```
 
 The flow is written to `QA_RECORDED_FLOWS.json` when the session ends.
+
+Validation example with auto-fix:
+
+```text
+Name this flow: wimsical
+Validating "wimsical"... (replaying 3 steps)
+✗ Validation FAILED — 1 issue(s):
+  Step 2: Blocking UI left open from previous step
+
+Auto-fix available:
+  → Insert "press Escape" before Step 2
+
+Apply fixes [f], save anyway [s], or discard [d]?
+```
 
 #### `v` — Add verify check to last flow step
 
@@ -298,6 +363,14 @@ Saves everything and exits:
 4. Archives session history to `.qa-learn-history/`
 5. Cleans up the session file
 
+If the process is interrupted unexpectedly while a flow is in progress, Rondar saves a draft flow with:
+
+- a `_draft_flow_{N}` name
+- `_validationStatus: "skipped"`
+- the current recorded steps
+
+This protects in-progress work during interrupted closes or terminal shutdown.
+
 ### Recording an E2E flow: full walkthrough
 
 Here is the complete sequence for recording a flow:
@@ -335,6 +408,40 @@ Here is the complete sequence for recording a flow:
 
 12. Press [d] to end the session
     → Model and flows saved
+```
+
+### Example: record safely when a dropdown stays open
+
+```text
+1. Press [r]
+2. In the browser, click "Select practice" and browse tabs
+3. Press [Enter]
+
+⚠ WARNING: dropdown is still open ("Select practice")
+  This will block clicks in the next step.
+
+4. Press [x]
+   → Overlay dismissed
+
+5. Press [Enter] again
+   → Step is recorded without carrying the open overlay into the next step
+```
+
+### Example: accept or reject an automatic split
+
+```text
+1. Press [r]
+2. In the browser, click Reports → Voicemails → Notifications
+3. Press [Enter]
+
+Auto-splitting into 3 steps (navigation boundaries detected):
+  Step 1: click a "Reports", navigate to /home/reports
+  Step 2: click a "Voicemails", navigate to /home/voicemails
+  Step 3: click a "Notifications", navigate to /home/notifications
+
+4a. Press [Enter] to accept the split
+or
+4b. Press [k] to keep it as one combined step
 ```
 
 ### What the agent tracks automatically
@@ -502,6 +609,12 @@ node node_modules/@rondah-ai/rondar/scripts/run-e2e.js --url http://localhost:30
 # Stop on first failure, show browser
 node node_modules/@rondah-ai/rondar/scripts/run-e2e.js --url http://localhost:3000 --stop-on-fail --no-headless
 
+# Slow visible replay so humans can follow along
+node node_modules/@rondah-ai/rondar/scripts/run-e2e.js --url http://localhost:3000 --no-headless --slow-mo 200 --step-delay 500
+
+# Demo preset for readable visible replay
+node node_modules/@rondah-ai/rondar/scripts/run-e2e.js --url http://localhost:3000 --demo
+
 # Auto-heal broken selectors and save fixes
 node node_modules/@rondah-ai/rondar/scripts/run-e2e.js --url http://localhost:3000 --heal
 
@@ -526,7 +639,8 @@ For each flow:
 1. Opens fresh browser context (clean state)
 2. Navigates to the flow's `startRoute`
 3. Auto-authenticates (unless the flow itself contains login actions — detected automatically)
-4. Replays each step's actions in order:
+4. Checks for blocking overlays before each step and tries to dismiss them
+5. Replays each step's actions in order:
    - `fill` — fills input field with resolved value
    - `click` — clicks element
    - `select` — opens dropdown trigger, waits for options, picks by position (handles both native `<select>` and custom Radix/headless dropdowns)
@@ -534,8 +648,23 @@ For each flow:
    - `press` — keyboard press
    - `waitForURL` — waits for navigation to complete
    - `submit` — clicks submit button
-5. After each step's actions: waits for network idle, runs verify checks
-6. Takes screenshot per step (full page on failure)
+6. If a click is intercepted by an overlay, tries dismiss + retry once
+7. Optionally slows browser actions with `--slow-mo`
+8. Optionally pauses after every action with `--step-delay`
+9. Waits for network idle and animations to settle
+10. Runs verify checks
+11. Takes screenshot per step (full page on failure)
+
+Example recovery during replay:
+
+```text
+Step 2: click a "Reports", navigate to /home/reports
+  ↳ overlay detected before step, dismissing...
+  ↳ overlay dismissed
+  ok click a:has-text('Reports')
+  ok waitForURL "/home/reports"
+  PASS [url_is] URL: /home/reports
+```
 
 ### Variable resolution
 
@@ -576,6 +705,9 @@ All string values in flow actions are resolved before use:
 | `--stop-on-fail` | Stop after first failure | `false` |
 | `--heal` | Auto-fix broken selectors and save to flows file | `false` |
 | `--timeout` | Action timeout (ms) | `10000` |
+| `--slow-mo` | Slow every Playwright browser action by N ms | `0` |
+| `--step-delay` | Pause after each recorded action by N ms | `0` |
+| `--demo` | Visible replay preset (`--no-headless --slow-mo 250 --step-delay 600`) | `false` |
 | `--var` | Custom variable as `key=value` (repeatable) | — |
 
 ### Output
@@ -584,7 +716,38 @@ All string values in flow actions are resolved before use:
 - `qa-results/e2e-report.html` — Visual HTML report with step breakdown, heal indicators, and screenshots
 - `qa-results/screenshots/` — Per-step screenshots
 
+If a saved flow has known validation issues, the runner prints a warning before replay:
+
+```text
+⚠ Flow "wimsical" has known validation issues:
+  - OVERLAY_BLOCKING at step 2
+```
+
 Exit code `0` if all flows pass, `1` if any fail.
+
+### Recommended visible replay presets
+
+Use these when you want to actually watch what the browser is doing:
+
+```bash
+# Balanced human-readable replay
+node node_modules/@rondah-ai/rondar/scripts/run-e2e.js \
+  --url http://localhost:3000 \
+  --no-headless \
+  --slow-mo 200 \
+  --step-delay 500
+
+# Very slow demo mode for walkthroughs or debugging
+node node_modules/@rondah-ai/rondar/scripts/run-e2e.js \
+  --url http://localhost:3000 \
+  --demo
+```
+
+Guidance:
+
+- `--slow-mo` slows low-level browser actions such as clicks, fills, and navigations.
+- `--step-delay` adds a visible pause after each recorded action.
+- `--demo` is a convenience preset for non-headless runs when the default replay feels too fast to follow.
 
 ---
 

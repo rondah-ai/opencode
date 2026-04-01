@@ -92,8 +92,10 @@ node scripts/learn.js --url http://localhost:3000 --email test@x.com --password 
 |-----|--------|
 | `Enter` | Record health checkpoint (or flow step if recording) |
 | `r` | Start recording an E2E flow |
-| `f` | Finish recording E2E flow (prompts for name) |
+| `f` | Finish E2E flow, validate it, then save/discard |
 | `v` | Add verify check to last flow step |
+| `x` | Auto-dismiss blocking overlay/modal/dropdown |
+| `k` | Keep a pending auto-split as one step |
 | `n` | Name the last recorded capability |
 | `e` | Record edge case for last capability |
 | `s` | Skip / discard pending events |
@@ -105,11 +107,24 @@ node scripts/learn.js --url http://localhost:3000 --email test@x.com --password 
 1. Press [r] to start recording
 2. Perform actions in the browser
 3. Press [Enter] after each meaningful step
-4. Press [v] to add verify checks (e.g., "Success" toast appeared)
-5. Press [f] to finish and name the flow
+4. If a dropdown/modal stays open, use [x] to dismiss it before the next step
+5. If navigation boundaries are detected, press [Enter] to accept auto-split or [k] to keep as one step
+6. Press [v] to add verify checks (e.g., "Success" toast appeared)
+7. Press [f] to finish, validate, and save the flow
 ```
 
 Flows are saved to `QA_RECORDED_FLOWS.json`.
+
+**Recorder Guardrails:**
+- Warns if a blocking overlay, modal, or dropdown is still open before committing a step
+- Warns on unusually large steps
+- Auto-splits navigation-heavy batches into smaller steps
+- Saves interrupted in-progress flows as draft entries on unexpected close
+
+**Flow Validation:**
+- Replays the flow in a fresh headless browser when you press `f`
+- If validation fails, you can apply fixes, save with known issues, or discard
+- Validation issues are tagged in the flow JSON and shown by the E2E runner later
 
 **What the agent tracks:**
 - Clicks on buttons, links, tabs, menu items
@@ -178,6 +193,12 @@ node scripts/run-e2e.js --url http://localhost:3000 --flow login_flow
 # Stop on first failure, show browser
 node scripts/run-e2e.js --url http://localhost:3000 --stop-on-fail --no-headless
 
+# Slow visible replay so humans can follow it
+node scripts/run-e2e.js --url http://localhost:3000 --no-headless --slow-mo 200 --step-delay 500
+
+# Demo preset for readable visible replay
+node scripts/run-e2e.js --url http://localhost:3000 --demo
+
 # Auto-heal broken selectors and save fixes
 node scripts/run-e2e.js --url http://localhost:3000 --heal
 
@@ -202,6 +223,9 @@ node scripts/run-e2e.js --url http://localhost:3000 --heal --email john@mail.com
 | `--stop-on-fail` | Stop after first failure | `false` |
 | `--heal` | Auto-fix broken selectors and save to flows file | `false` |
 | `--timeout` | Action timeout (ms) | `10000` |
+| `--slow-mo` | Slow every Playwright browser action by N ms | `0` |
+| `--step-delay` | Pause after each recorded action by N ms | `0` |
+| `--demo` | Visible replay preset (`--no-headless --slow-mo 250 --step-delay 600`) | `false` |
 | `--var` | Custom variable `key=value` | — |
 
 **Verify Checks:**
@@ -217,6 +241,18 @@ node scripts/run-e2e.js --url http://localhost:3000 --heal --email john@mail.com
 | `no_js_errors` | No JavaScript errors |
 | `no_console_errors` | No console errors |
 | `no_error_alerts` | No error alerts visible |
+
+**Replay Behavior:**
+- Dismisses blocking overlays before each step when possible
+- Retries intercepted clicks after dismissal
+- Waits for network and animations to settle between steps
+- Warns when replaying flows previously saved with known validation issues
+
+**Visible Replay Presets:**
+```bash
+node scripts/run-e2e.js --url http://localhost:3000 --no-headless --slow-mo 200 --step-delay 500
+node scripts/run-e2e.js --url http://localhost:3000 --demo
+```
 
 **Selector Auto-Healing:**
 

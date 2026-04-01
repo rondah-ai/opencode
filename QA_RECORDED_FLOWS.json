@@ -2197,9 +2197,424 @@
       ],
       "stepCount": 3,
       "recordedAt": "2026-03-31T21:12:12.450Z"
+    },
+    {
+      "name": "vim",
+      "startRoute": "/home/call-logs",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "route": "/home/call-logs",
+          "description": "click button \"Maybe Later\", click button \"Select practice\", click button \"Live\", click button \"Onboarding\", click button \"Deactivated\"",
+          "actions": [
+            {
+              "type": "click",
+              "selector": "button:has-text('Maybe Later')",
+              "text": "Maybe Later",
+              "selectorFallbacks": [
+                "button:has-text('Maybe Later')",
+                "button:has-text(\"Maybe Later\")"
+              ]
+            },
+            {
+              "type": "click",
+              "selector": "button:has-text('Select practice')",
+              "text": "Select practice",
+              "selectorFallbacks": [
+                "[aria-label=\"Select a practice\"]",
+                "button:has-text('Select practice')",
+                "[aria-label=\"Select a practice\"]"
+              ]
+            },
+            {
+              "type": "click",
+              "selector": "button:has-text('Live')",
+              "text": "Live",
+              "selectorFallbacks": [
+                "button:has-text('Live')",
+                "button:has-text(\"Live\")"
+              ]
+            },
+            {
+              "type": "click",
+              "selector": "button:has-text('Onboarding')",
+              "text": "Onboarding",
+              "selectorFallbacks": [
+                "button:has-text('Onboarding')",
+                "button:has-text(\"Onboarding\")"
+              ]
+            },
+            {
+              "type": "click",
+              "selector": "button:has-text('Deactivated')",
+              "text": "Deactivated",
+              "selectorFallbacks": [
+                "button:has-text('Deactivated')",
+                "button:has-text(\"Deactivated\")"
+              ]
+            }
+          ],
+          "rawEventCount": 5,
+          "landmark": {
+            "selector": "title",
+            "text": "Rondah AI Console"
+          },
+          "stateAfter": {
+            "url": "http://localhost:3000/home/call-logs",
+            "route": "/home/call-logs",
+            "timestamp": 1774997441559,
+            "elementCounts": {
+              "tbody tr": 0,
+              "[role='row']": 0,
+              "table": 0,
+              "[role='dialog']": 0,
+              "[role='alert']": 1,
+              "[role='status']": 0,
+              ".toast, [data-sonner-toast]": 0,
+              "form": 0,
+              "input:visible": 1,
+              "button:visible": 10,
+              ".error, .text-red-500": 0,
+              "thead th": 0,
+              "[class*='modal']": 0,
+              "[class*='filter-chip'], [class*='badge']": 0
+            },
+            "visibleTexts": [
+              "Select practice",
+              "Operations",
+              "Analytics",
+              "Appointments (Legacy)",
+              "Appointments",
+              "Call Logs",
+              "Reports",
+              "Voicemails",
+              "Action Centre",
+              "My Notifications",
+              "System Health",
+              "Practice Notifications",
+              "Configurations",
+              "Admin Hub",
+              "john@mail.com",
+              "Toggle Sidebar"
+            ],
+            "consoleErrorCount": 0,
+            "landmarks": {
+              "title": "Rondah AI Console",
+              "h1": "",
+              "h2": "",
+              "dataTestIds": [],
+              "dataPages": [],
+              "activeNav": "",
+              "errorAlerts": []
+            }
+          },
+          "verify": [
+            {
+              "type": "landmark_visible",
+              "selector": "title",
+              "text": "Rondah AI Console"
+            }
+          ],
+          "timestamp": 1774997441563
+        },
+        {
+          "stepNumber": 2,
+          "route": "/home/dashboard",
+          "description": "click a \"Analytics\", navigate to /home/dashboard",
+          "actions": [
+            {
+              "type": "click",
+              "selector": "a:has-text('Analytics')",
+              "text": "Analytics",
+              "selectorFallbacks": [
+                "a:has-text('Analytics')",
+                "a[href=\"/home/dashboard\"]",
+                "a:has-text(\"Analytics\")"
+              ]
+            },
+            {
+              "type": "waitForURL",
+              "value": "/home/dashboard"
+            }
+          ],
+          "rawEventCount": 2,
+          "landmark": {
+            "selector": "h1",
+            "text": "Analytics"
+          },
+          "stateAfter": {
+            "url": "http://localhost:3000/home/dashboard",
+            "route": "/home/dashboard",
+            "timestamp": 1774997466643,
+            "elementCounts": {
+              "tbody tr": 2,
+              "[role='row']": 0,
+              "table": 2,
+              "[role='dialog']": 0,
+              "[role='alert']": 2,
+              "[role='status']": 0,
+              ".toast, [data-sonner-toast]": 0,
+              "form": 0,
+              "input:visible": 1,
+              "button:visible": 19,
+              ".error, .text-red-500": 0,
+              "thead th": 3,
+              "[class*='modal']": 0,
+              "[class*='filter-chip'], [class*='badge']": 0
+            },
+            "visibleTexts": [
+              "Select practice",
+              "Operations",
+              "Analytics",
+              "Appointments (Legacy)",
+              "Appointments",
+              "Call Logs",
+              "Reports",
+              "Voicemails",
+              "Action Centre",
+              "My Notifications",
+              "System Health",
+              "Practice Notifications",
+              "Configurations",
+              "Admin Hub",
+              "john@mail.com",
+              "Toggle Sidebar",
+              "Analytics",
+              "Data prior to August 15th may not be fully reliable. We are currently processing historical data from call transcripts to improve accuracy.",
+              "Select practices",
+              "Mar 01, 2026",
+              "Apr 01, 2026",
+              "Reset",
+              "Total Calls:",
+              "Dashboard",
+              "Data View",
+              "New Patients Registered",
+              "New Patient Registration Conversion Rate",
+              "N/A",
+              "Newly Registered Patients Booked",
+              "New Registration to Booking Conversion Rate",
+              "N/A",
+              "Appointments Booked",
+              "Appointments Cancelled",
+              "Appointments Rescheduled",
+              "Appointments Confirmed",
+              "Call Time",
+              "Total Call Time",
+              "0:00",
+              "Average Call Duration",
+              "Call Distribution",
+              "Hourly",
+              "Daily",
+              "12am",
+              "1am",
+              "2am",
+              "3am",
+              "4am",
+              "5am",
+              "6am",
+              "7am",
+              "8am",
+              "9am",
+              "10am",
+              "11am",
+              "12pm",
+              "1pm",
+              "2pm",
+              "3pm",
+              "4pm",
+              "5pm",
+              "6pm",
+              "7pm",
+              "8pm",
+              "9pm",
+              "10pm",
+              "11pm",
+              "Caller Intents",
+              "Table",
+              "Chart",
+              "Intent",
+              "Number of Calls",
+              "Percentage of Calls",
+              "No data",
+              "Top Drop-off Points",
+              "View All",
+              "No failures"
+            ],
+            "consoleErrorCount": 0,
+            "landmarks": {
+              "title": "Rondah AI Console",
+              "h1": "Analytics",
+              "h2": "",
+              "dataTestIds": [],
+              "dataPages": [],
+              "activeNav": "",
+              "errorAlerts": []
+            }
+          },
+          "verify": [],
+          "timestamp": 1774997511287
+        },
+        {
+          "stepNumber": 3,
+          "route": "/home/configurations/practice-details",
+          "description": "click button \"Mar 01, 2026 - Apr 01, 2026\", click button \"29\", click button \"Configurations\", click a \"Practice Details\", navigate to /home/configurations/practice-details",
+          "actions": [
+            {
+              "type": "click",
+              "selector": "button:has-text('Mar 01, 2026 - Apr 01, 2026')",
+              "text": "Mar 01, 2026 - Apr 01, 2026",
+              "selectorFallbacks": [
+                "button:has-text('Mar 01, 2026 - Apr 01, 2026')",
+                "button:has-text(\"Mar 01, 2026 - Apr 01, 2026\")"
+              ]
+            },
+            {
+              "type": "click",
+              "selector": "button:has-text('29')",
+              "text": "29",
+              "selectorFallbacks": [
+                "button:has-text('29')",
+                "button:has-text(\"29\")"
+              ]
+            },
+            {
+              "type": "click",
+              "selector": "button:has-text('Configurations')",
+              "text": "Configurations",
+              "selectorFallbacks": [
+                "button:has-text('Configurations')",
+                "button:has-text(\"Configurations\")"
+              ]
+            },
+            {
+              "type": "click",
+              "selector": "a:has-text('Practice Details')",
+              "text": "Practice Details",
+              "selectorFallbacks": [
+                "a:has-text('Practice Details')",
+                "a[href=\"/home/configurations/practice-details\"]",
+                "a:has-text(\"Practice Details\")"
+              ]
+            },
+            {
+              "type": "waitForURL",
+              "value": "/home/configurations/practice-details"
+            }
+          ],
+          "rawEventCount": 5,
+          "landmark": {
+            "selector": "h1",
+            "text": "Practice Details"
+          },
+          "stateAfter": {
+            "url": "http://localhost:3000/home/configurations/practice-details",
+            "route": "/home/configurations/practice-details",
+            "timestamp": 1774997494201,
+            "elementCounts": {
+              "tbody tr": 0,
+              "[role='row']": 0,
+              "table": 0,
+              "[role='dialog']": 0,
+              "[role='alert']": 1,
+              "[role='status']": 0,
+              ".toast, [data-sonner-toast]": 0,
+              "form": 1,
+              "input:visible": 8,
+              "button:visible": 14,
+              ".error, .text-red-500": 0,
+              "thead th": 0,
+              "[class*='modal']": 0,
+              "[class*='filter-chip'], [class*='badge']": 0
+            },
+            "visibleTexts": [
+              "Select practice",
+              "Operations",
+              "Analytics",
+              "Appointments (Legacy)",
+              "Appointments",
+              "Call Logs",
+              "Reports",
+              "Voicemails",
+              "Action Centre",
+              "My Notifications",
+              "System Health",
+              "Practice Notifications",
+              "Configurations",
+              "Practice Details",
+              "PMS Connector",
+              "Server",
+              "Operatories",
+              "Providers",
+              "Appointment Types",
+              "Appointment Configs",
+              "Rescheduling",
+              "PMS Resources",
+              "Phone Numbers",
+              "Phone Configs",
+              "Knowledge Base",
+              "Calendar Hub",
+              "Admin Hub",
+              "john@mail.com",
+              "Toggle Sidebar",
+              "Practice Details",
+              "Edit",
+              "Practice ID",
+              "The unique identifier for this practice (cannot be changed)",
+              "Practice Name",
+              "The name of this practice as it appears in the system.",
+              "DSO Name (Optional)",
+              "The name of the Dental Service Organization this practice belongs to.",
+              "Practice Configuration Status",
+              "Onboarding",
+              "Live",
+              "Onboarding",
+              "Deactivated",
+              "The current configuration status of the practice.",
+              "Street Address 1",
+              "Enter the primary street address of the practice.",
+              "Street Address 2 (Optional)",
+              "Additional address information (suite, unit, etc.).",
+              "City",
+              "Enter the city where the practice is located.",
+              "State/Province/Region",
+              "Enter the state, province, or region code.",
+              "Postal Code",
+              "Enter the postal/ZIP code.",
+              "Country",
+              "United States",
+              "United States",
+              "Canada",
+              "Select the country where the practice is located.",
+              "Timezone",
+              "Select timezone...",
+              "The timezone for this practice. This affects scheduling and notifications."
+            ],
+            "consoleErrorCount": 0,
+            "landmarks": {
+              "title": "Rondah AI Console",
+              "h1": "Practice Details",
+              "h2": "",
+              "dataTestIds": [],
+              "dataPages": [],
+              "activeNav": "",
+              "errorAlerts": []
+            }
+          },
+          "verify": [
+            {
+              "type": "landmark_visible",
+              "selector": "h1",
+              "text": "Practice Details"
+            }
+          ],
+          "timestamp": 1774997511287
+        }
+      ],
+      "stepCount": 3,
+      "recordedAt": "2026-03-31T22:52:04.934Z"
     }
   ],
-  "lastUpdated": "2026-03-31T21:12:24.637Z",
+  "lastUpdated": "2026-03-31T22:55:38.302Z",
   "_lastHealed": "2026-03-31T21:12:52.589Z",
   "_healCount": 2
 }
