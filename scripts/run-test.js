@@ -13,6 +13,7 @@
 const fs = require("fs")
 const path = require("path")
 const { chromium } = require("playwright")
+const { getBootstrapFile, shouldUseBootstrap, loadBootstrap, replayBootstrap } = require("../lib/bootstrap")
 
 // ─── Load .env ───────────────────────────────────────────────────────────────
 const envPath = path.resolve(process.cwd(), ".env")
@@ -46,6 +47,22 @@ const config = {
   outputDir: getArg("--output-dir") || "./qa-results",
   headless: !hasFlag("--no-headless"),
   timeout: parseInt(getArg("--timeout") || "10000"),
+  includeInit: hasFlag("--include-init"),
+  useBootstrap: hasFlag("--use-bootstrap"),
+  noBootstrap: hasFlag("--no-bootstrap"),
+  bootstrapFile: getArg("--bootstrap-file") || getBootstrapFile(),
+}
+
+const unexpectedPositionals = args.filter((arg) => !arg.startsWith("--"))
+const looksLikeMisforwardedNpmArgs = unexpectedPositionals.some(
+  (arg) => /^https?:\/\//.test(arg) || arg.includes("@") || /^\d+$/.test(arg),
+)
+
+if (looksLikeMisforwardedNpmArgs && !hasFlag("--url")) {
+  console.error("Error: script arguments appear to have been swallowed by npm.")
+  console.error('Use `npm run test:full -- --url http://localhost:3000 --email test@x.com --password secret`.')
+  console.error("Received positional args:", unexpectedPositionals.join(" "))
+  process.exit(1)
 }
 
 // ─── Load Model ──────────────────────────────────────────────────────────────
@@ -57,6 +74,25 @@ if (!fs.existsSync(config.modelPath)) {
 }
 
 const model = JSON.parse(fs.readFileSync(config.modelPath, "utf8"))
+const TOAST_SELECTOR = ".toast, [data-sonner-toast], [role='alert'], [role='status']"
+
+function modelHasLearnedCoverage(featureModel) {
+  for (const feature of Object.values(featureModel.features || {})) {
+    if (feature.health && Array.isArray(feature.health.checks) && feature.health.checks.length > 0) {
+      return true
+    }
+
+    for (const cap of Object.values(feature.capabilities || {})) {
+      const confidence = cap._confidence || "unknown"
+      if (confidence !== "init" && confidence !== "migrated") return true
+    }
+  }
+
+  return false
+}
+
+const hasLearnedCoverage = modelHasLearnedCoverage(model)
+const shouldSkipInitCapabilities = !config.includeInit && hasLearnedCoverage
 
 // ─── Determine What to Test ──────────────────────────────────────────────────
 
@@ -122,6 +158,8 @@ function getTestPlan() {
         verify: cap.verify || {},
         testData: cap.test_data || {},
         confidence: cap._confidence || "unknown",
+        source: cap.source || null,
+        mode: cap.mode || null,
       })
     }
   }
@@ -160,6 +198,8 @@ async function main() {
   console.log(`  Suite: ${config.suite}`)
   console.log(`  Capabilities: ${plan.length}`)
   console.log(`  Headless: ${config.headless}`)
+  if (shouldUseBootstrap(config)) console.log(`  Bootstrap: ${path.resolve(config.bootstrapFile)}`)
+  if (!hasLearnedCoverage) console.log("  Coverage: skeleton model detected; running init capabilities")
   console.log("=".repeat(60))
   console.log("")
 
@@ -185,24 +225,48 @@ async function main() {
   })
   const page = await context.newPage()
 
-  // Track console errors
-  let consoleErrors = []
+  // Track errors by category
+  let consoleErrors = []   // console.error() calls
+  let jsErrors = []        // uncaught exceptions (pageerror)
+  let requestFailures = [] // failed network requests
+
   page.on("console", (msg) => {
     if (msg.type() === "error") consoleErrors.push(msg.text())
   })
   page.on("pageerror", (err) => {
-    consoleErrors.push(err.message)
+    jsErrors.push(err.message)
+  })
+  page.on("requestfailed", (request) => {
+    requestFailures.push({
+      url: request.url(),
+      resourceType: request.resourceType(),
+      failure: request.failure()?.errorText || "unknown",
+    })
   })
 
   const results = []
   const startTime = Date.now()
   let isAuthenticated = false
+  let skippedInitCount = 0
 
   try {
+    if (shouldUseBootstrap(config)) {
+      console.log("Replaying bootstrap...")
+      const bootstrap = loadBootstrap(config)
+      await replayBootstrap(page, bootstrap, config)
+      const bootstrapRoute = new URL(page.url()).pathname
+      console.log(`  Bootstrap ready at ${bootstrapRoute}`)
+      if (!/(auth|login|sign-in)/i.test(bootstrapRoute)) {
+        isAuthenticated = true
+      }
+    }
+
     for (let i = 0; i < plan.length; i++) {
       const step = plan[i]
       const stepStart = Date.now()
       consoleErrors = [] // reset per step
+      jsErrors = []
+      requestFailures = []
 
       console.log(`[${i + 1}/${plan.length}] ${step.feature}.${step.capability}`)
       console.log(`  Route: ${step.route}`)
@@ -238,10 +302,11 @@ async function main() {
 
           // Run V2 health checks
           for (const check of step.checks) {
-            const checkResult = await runHealthCheck(check, page, consoleErrors)
+            const checkResult = await runHealthCheck(check, page, consoleErrors, jsErrors, requestFailures)
             result.checks.push(checkResult)
             const icon = checkResult.passed ? "PASS" : "FAIL"
-            console.log(`  ${icon} [${check.type}] ${checkResult.detail}`)
+            const category = checkResult.category ? ` [${checkResult.category}]` : ""
+            console.log(`  ${icon} [${check.type}]${category} ${checkResult.detail}`)
           }
 
           // If landmark specified, verify it
@@ -250,7 +315,7 @@ async function main() {
               type: "landmark_visible",
               selector: step.landmark.selector,
               text: step.landmark.text,
-            }, page, consoleErrors)
+            }, page, consoleErrors, jsErrors, requestFailures)
             result.checks.push(landmarkResult)
             const icon = landmarkResult.passed ? "PASS" : "FAIL"
             console.log(`  ${icon} [landmark] ${landmarkResult.detail}`)
@@ -267,6 +332,37 @@ async function main() {
           const passCount = result.checks.filter(c => c.passed).length
           console.log(`  -> ${result.status.toUpperCase()} (${passCount}/${result.checks.length} checks)`)
 
+          result.duration = Date.now() - stepStart
+          results.push(result)
+          console.log("")
+          continue
+        }
+
+        if (shouldSkipInitCapabilities && (step.confidence === "init" || step.confidence === "migrated")) {
+          result.status = "skipped"
+          result.checks.push({
+            name: "confidence_gate",
+            type: "confidence_gate",
+            passed: false,
+            detail: `Skipped unlearned ${step.confidence} capability; record it in learn mode or rerun with --include-init`,
+          })
+          skippedInitCount++
+          console.log(`  SKIP - Unlearned ${step.confidence} capability`)
+          result.duration = Date.now() - stepStart
+          results.push(result)
+          console.log("")
+          continue
+        }
+
+        if (isDraftInteractiveCapability(step)) {
+          result.status = "skipped"
+          result.checks.push({
+            name: "interaction_gate",
+            type: "interaction_gate",
+            passed: false,
+            detail: "Draft interactive capability requires learn-mode observation before it can run reliably",
+          })
+          console.log("  SKIP - Draft interactive capability requires learn mode")
           result.duration = Date.now() - stepStart
           results.push(result)
           console.log("")
@@ -314,23 +410,24 @@ async function main() {
         // ── Navigate to Route ──
         const targetUrl = new URL(step.route, config.url).href
         const currentPath = new URL(page.url()).pathname
+        const trackedSelectors = getTrackedSelectors(step.verify)
 
         if (currentPath !== step.route) {
           // Capture before state
-          const beforeState = await captureState(page)
+          const beforeState = await captureState(page, trackedSelectors)
 
           await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: config.timeout })
           await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {})
           await page.waitForTimeout(1000) // let UI settle
 
           // Capture after state
-          const afterState = await captureState(page)
+          const afterState = await captureState(page, trackedSelectors)
 
           // ── Run Verify Checks ──
           for (const [checkName, check] of Object.entries(step.verify)) {
             if (checkName.startsWith("_") && checkName !== "_role_dialog_" && checkName !== "_role_alert_") continue
 
-            const checkResult = runCheck(checkName, check, beforeState, afterState, consoleErrors)
+            const checkResult = runCheck(checkName, check, beforeState, afterState, consoleErrors, jsErrors)
             result.checks.push(checkResult)
 
             const icon = checkResult.passed ? "PASS" : "FAIL"
@@ -338,13 +435,13 @@ async function main() {
           }
         } else {
           // Already on the right page
-          const state = await captureState(page)
+          const state = await captureState(page, trackedSelectors)
 
           for (const [checkName, check] of Object.entries(step.verify)) {
             if (checkName.startsWith("_") && checkName !== "_role_dialog_" && checkName !== "_role_alert_") continue
 
             // For same-page, just check current state
-            const checkResult = runStaticCheck(checkName, check, state, consoleErrors)
+            const checkResult = runStaticCheck(checkName, check, state, consoleErrors, jsErrors)
             result.checks.push(checkResult)
 
             const icon = checkResult.passed ? "PASS" : "FAIL"
@@ -406,6 +503,9 @@ async function main() {
   console.log(`  Failed:   ${failed}`)
   console.log(`  Skipped:  ${skipped}`)
   console.log(`  Duration: ${(totalDuration / 1000).toFixed(1)}s`)
+  if (skippedInitCount > 0) {
+    console.log(`  Note:     ${skippedInitCount} unlearned init/migrated capabilities were skipped`)
+  }
   console.log("")
 
   if (failed > 0) {
@@ -420,6 +520,14 @@ async function main() {
 
   // ── Save Results ───────────────────────────────────────────────────────────
 
+  // Collect failure categories for triage
+  const categories = {}
+  for (const r of results) {
+    for (const c of r.checks || []) {
+      if (c.category) categories[c.category] = (categories[c.category] || 0) + 1
+    }
+  }
+
   const summary = {
     suite: config.suite,
     url: config.url,
@@ -430,6 +538,7 @@ async function main() {
     duration: totalDuration,
     results,
     summary: { total: results.length, passed, failed, skipped },
+    categories,
   }
 
   fs.writeFileSync(path.join(config.outputDir, "summary.json"), JSON.stringify(summary, null, 2))
@@ -437,6 +546,13 @@ async function main() {
 
   console.log(`\nResults: ${config.outputDir}/summary.json`)
   console.log(`Report:  ${config.outputDir}/report.html`)
+
+  if (Object.keys(categories).length > 0) {
+    console.log(`\nFailure categories:`)
+    for (const [cat, count] of Object.entries(categories)) {
+      console.log(`  ${cat}: ${count}`)
+    }
+  }
 
   process.exit(failed > 0 ? 1 : 0)
 }
@@ -495,12 +611,42 @@ async function authenticate(page, email, password) {
   await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {})
 }
 
+function isDraftInteractiveCapability(step) {
+  if (step.type !== "capability") return false
+  if (step.mode === "interactive") return true
+  if (step.mode === "passive") return false
+
+  return new Set([
+    "login_invalid",
+    "sort",
+    "pagination",
+    "create",
+    "edit",
+    "delete",
+    "search",
+    "clear_search",
+    "submit_form",
+    "submit_invalid",
+  ]).has(step.capability)
+}
+
+function getTrackedSelectors(verify = {}) {
+  const selectors = new Set(MONITORED_SELECTORS)
+
+  for (const check of Object.values(verify)) {
+    if (check && check.selector) selectors.add(check.selector)
+  }
+
+  selectors.add(TOAST_SELECTOR)
+  return [...selectors]
+}
+
 // ─── State Capture ───────────────────────────────────────────────────────────
 
-async function captureState(page) {
+async function captureState(page, selectors = MONITORED_SELECTORS) {
   const elementCounts = {}
 
-  for (const selector of MONITORED_SELECTORS) {
+  for (const selector of selectors) {
     try {
       const count = await page.locator(selector).count()
       elementCounts[selector] = count
@@ -519,7 +665,7 @@ async function captureState(page) {
 
 // ─── Check Runners ───────────────────────────────────────────────────────────
 
-function runCheck(name, check, before, after, consoleErrors) {
+function runCheck(name, check, before, after, consoleErrors, jsErrors) {
   const result = { name, type: check.type, passed: false, detail: "" }
 
   switch (check.type) {
@@ -539,6 +685,14 @@ function runCheck(name, check, before, after, consoleErrors) {
       break
     }
 
+    case "element_present": {
+      const sel = check.selector || ""
+      const afterCount = after.elementCounts[sel] || 0
+      result.passed = afterCount > 0
+      result.detail = `${sel}: ${afterCount} found`
+      break
+    }
+
     case "element_disappeared": {
       const sel = check.selector || ""
       const beforeCount = before.elementCounts[sel] || 0
@@ -554,23 +708,36 @@ function runCheck(name, check, before, after, consoleErrors) {
       const afterCount = after.elementCounts[sel] || 0
       result.passed = beforeCount !== afterCount
       result.detail = `${sel}: ${beforeCount} -> ${afterCount}`
-      // If counts are the same but both > 0, still pass (element exists)
-      if (!result.passed && afterCount > 0) {
-        result.passed = true
-        result.detail += " (present)"
-      }
       break
     }
 
-    case "no_errors":
-      result.passed = consoleErrors.length === 0
-      result.detail = result.passed
-        ? "No console errors"
-        : `${consoleErrors.length} errors: ${consoleErrors.slice(0, 2).join("; ")}`
+    case "custom_selector_visible": {
+      const sel = check.selector || ""
+      const afterCount = after.elementCounts[sel] || 0
+      result.passed = afterCount > 0
+      result.detail = `${sel}: ${afterCount} found`
       break
+    }
+
+    case "custom_selector_hidden": {
+      const sel = check.selector || ""
+      const afterCount = after.elementCounts[sel] || 0
+      result.passed = afterCount === 0
+      result.detail = `${sel}: ${afterCount} found`
+      break
+    }
+
+    case "no_errors": {
+      const allErrors = [...consoleErrors, ...(jsErrors || [])]
+      result.passed = allErrors.length === 0
+      result.detail = result.passed
+        ? "No errors"
+        : `${allErrors.length} errors: ${allErrors.slice(0, 2).join("; ")}`
+      break
+    }
 
     case "toast_appeared": {
-      const toastSel = ".toast, [data-sonner-toast], [role='alert']"
+      const toastSel = TOAST_SELECTOR
       const beforeCount = before.elementCounts[toastSel] || 0
       const afterCount = after.elementCounts[toastSel] || 0
       result.passed = afterCount > beforeCount
@@ -579,14 +746,14 @@ function runCheck(name, check, before, after, consoleErrors) {
     }
 
     default:
-      result.passed = true
-      result.detail = `Unhandled check type: ${check.type} (skipped)`
+      result.passed = false
+      result.detail = `Unsupported check type: ${check.type}`
   }
 
   return result
 }
 
-function runStaticCheck(name, check, state, consoleErrors) {
+function runStaticCheck(name, check, state, consoleErrors, jsErrors) {
   const result = { name, type: check.type, passed: false, detail: "" }
 
   switch (check.type) {
@@ -597,6 +764,7 @@ function runStaticCheck(name, check, state, consoleErrors) {
       break
 
     case "element_appeared":
+    case "element_present":
     case "custom_selector_visible": {
       const sel = check.selector || ""
       const count = state.elementCounts[sel] || 0
@@ -617,21 +785,23 @@ function runStaticCheck(name, check, state, consoleErrors) {
     case "element_count_changed": {
       const sel = check.selector || ""
       const count = state.elementCounts[sel] || 0
-      result.passed = count > 0
-      result.detail = `${sel}: ${count} present`
+      result.passed = false
+      result.detail = `${sel}: static check cannot prove change`
       break
     }
 
-    case "no_errors":
-      result.passed = consoleErrors.length === 0
+    case "no_errors": {
+      const allErrs = [...consoleErrors, ...(jsErrors || [])]
+      result.passed = allErrs.length === 0
       result.detail = result.passed
-        ? "No console errors"
-        : `${consoleErrors.length} errors`
+        ? "No errors"
+        : `${allErrs.length} errors`
       break
+    }
 
     default:
-      result.passed = true
-      result.detail = `Unhandled: ${check.type} (skipped)`
+      result.passed = false
+      result.detail = `Unsupported check type: ${check.type}`
   }
 
   return result
@@ -639,23 +809,53 @@ function runStaticCheck(name, check, state, consoleErrors) {
 
 // ─── V2 Health Check Runner ──────────────────────────────────────────────
 
-async function runHealthCheck(check, page, consoleErrors) {
-  const result = { name: check.type, type: check.type, passed: false, detail: "" }
+async function runHealthCheck(check, page, consoleErrors, jsErrors, requestFailures) {
+  // Default empty arrays for backward compat (callers may not pass all)
+  jsErrors = jsErrors || []
+  requestFailures = requestFailures || []
+
+  const result = { name: check.type, type: check.type, passed: false, detail: "", category: null }
 
   switch (check.type) {
-    case "no_js_errors":
-      result.passed = consoleErrors.length === 0
-      result.detail = result.passed
-        ? "No JS errors"
-        : `${consoleErrors.length} errors: ${consoleErrors.slice(0, 2).join("; ")}`
+    case "no_js_errors": {
+      // Uncaught exceptions (pageerror) — separate from console.error
+      result.passed = jsErrors.length === 0
+      if (!result.passed) {
+        const hydrationErrors = jsErrors.filter(e => /hydration|text content does not match|did not match/i.test(e))
+        if (hydrationErrors.length > 0) {
+          result.category = "hydration_error"
+          result.detail = `Hydration error: ${hydrationErrors[0].slice(0, 150)}`
+        } else {
+          result.category = "runtime_error"
+          result.detail = `${jsErrors.length} JS errors: ${jsErrors.slice(0, 2).join("; ")}`
+        }
+      } else {
+        result.detail = "No JS errors"
+      }
       break
+    }
 
     case "no_console_errors":
+      // Explicit console.error() calls
       result.passed = consoleErrors.length === 0
       result.detail = result.passed
         ? "No console errors"
-        : `${consoleErrors.length} console errors`
+        : `${consoleErrors.length} console errors: ${consoleErrors.slice(0, 2).join("; ")}`
+      if (!result.passed) result.category = "console_error"
       break
+
+    case "no_request_failures": {
+      // Only fail on API/fetch failures, not static assets or analytics
+      const apiFailures = requestFailures.filter(r =>
+        r.resourceType === "fetch" || r.resourceType === "xhr"
+      )
+      result.passed = apiFailures.length === 0
+      result.detail = result.passed
+        ? "No API request failures"
+        : `${apiFailures.length} failed: ${apiFailures.map(r => `${r.failure} ${r.url.split("?")[0]}`).slice(0, 2).join("; ")}`
+      if (!result.passed) result.category = "request_failure"
+      break
+    }
 
     case "no_error_alerts": {
       const errorAlerts = await page.evaluate(() => {

@@ -25,6 +25,12 @@ export interface PageScanData {
     links: number
   }
   outboundRoutes: string[]
+  landmarks?: {
+    h1: string
+    h2: string
+    dataPages: string[]
+    dataTestIds: string[]
+  }
   consoleErrors: { type: string; text: string }[]
   success: boolean
 }
@@ -36,8 +42,16 @@ export interface GeneratedCapability {
   preconditions?: string[]
   cleanup?: string
   test_data?: Record<string, string>
+  source: "init" | "learn"
+  mode: "passive" | "interactive"
   _confidence: "init"
   _observed: 0
+}
+
+export interface HealthBlock {
+  route: string
+  landmark?: { selector: string; text: string }
+  checks: Array<{ type: string; value?: string; selector?: string; text?: string }>
 }
 
 export interface GeneratedFeature {
@@ -45,6 +59,7 @@ export interface GeneratedFeature {
   route: string
   requires: string[]
   capabilities: Record<string, GeneratedCapability>
+  health?: HealthBlock
 }
 
 export interface GeneratedFeatureModel {
@@ -80,123 +95,24 @@ const PATTERN_CAPABILITY_MAP: Record<string, Record<string, CapabilityTemplate>>
         no_errors: { type: "no_errors" },
       },
     },
-    login_invalid: {
-      interaction: "fill invalid credentials, click submit",
-      expected: ["error message appears", "stays on login page"],
-      verify: {
-        error_shown: { type: "element_appeared", selector: "[role='alert'], .text-red-500, .error" },
-      },
-      test_data: { email: "invalid@example.com", password: "wrongpassword" },
-    },
   },
 
   data_table: {
     view_list: {
       interaction: "navigate to page",
-      expected: ["table with records visible"],
+      expected: ["page loads without errors"],
       verify: {
-        table_visible: { type: "custom_selector_visible", selector: "table, [role='grid']" },
-        has_rows: { type: "element_appeared", selector: "tbody tr, [role='row']" },
         no_errors: { type: "no_errors" },
       },
-    },
-    sort: {
-      interaction: "click column header to sort",
-      expected: ["table row order changes", "sort indicator appears"],
-      verify: {
-        rows_changed: { type: "element_count_changed", selector: "tbody tr" },
-      },
-      preconditions: ["view_list"],
-    },
-    pagination: {
-      interaction: "click next page or page number in pagination controls",
-      expected: ["table rows update to show next page of data"],
-      verify: {
-        rows_changed: { type: "element_count_changed", selector: "tbody tr" },
-        no_errors: { type: "no_errors" },
-      },
-      preconditions: ["view_list"],
     },
   },
 
   crud_page: {
     view_list: {
       interaction: "navigate to page",
-      expected: ["list or table of records visible"],
+      expected: ["page loads without errors"],
       verify: {
-        table_visible: { type: "custom_selector_visible", selector: "table, [role='grid']" },
-        has_rows: { type: "element_appeared", selector: "tbody tr, [role='row']" },
         no_errors: { type: "no_errors" },
-      },
-    },
-    create: {
-      interaction: "click Add/Create button, fill form, submit",
-      expected: ["new record appears in list", "success toast or confirmation"],
-      verify: {
-        element_appeared: { type: "element_appeared", selector: "tbody tr" },
-        toast_appeared: { type: "toast_appeared" },
-        no_errors: { type: "no_errors" },
-      },
-      preconditions: ["view_list"],
-      cleanup: "delete the created record if possible",
-      test_data: { name: "TODO", description: "TODO" },
-    },
-    edit: {
-      interaction: "click Edit on a record, modify fields, submit",
-      expected: ["record updated in list", "success toast or confirmation"],
-      verify: {
-        toast_appeared: { type: "toast_appeared" },
-        no_errors: { type: "no_errors" },
-      },
-      preconditions: ["view_list"],
-    },
-    delete: {
-      interaction: "click Delete on a record, confirm in dialog",
-      expected: ["record removed from list", "success toast or confirmation"],
-      verify: {
-        element_disappeared: { type: "element_disappeared", selector: "tbody tr" },
-        no_errors: { type: "no_errors" },
-      },
-      preconditions: ["view_list"],
-    },
-  },
-
-  search_filter: {
-    search: {
-      interaction: "type search term in search input, wait for results to update",
-      expected: ["displayed results filtered to match search term"],
-      verify: {
-        rows_changed: { type: "element_count_changed", selector: "tbody tr" },
-        no_errors: { type: "no_errors" },
-      },
-      cleanup: "clear search input",
-      test_data: { search_term: "TODO" },
-    },
-    clear_search: {
-      interaction: "clear the search input or click clear button",
-      expected: ["full unfiltered results restored"],
-      verify: {
-        rows_changed: { type: "element_count_changed", selector: "tbody tr" },
-      },
-      preconditions: ["search"],
-    },
-  },
-
-  form_generic: {
-    submit_form: {
-      interaction: "fill all required fields, click submit",
-      expected: ["form submitted successfully", "success toast or redirect"],
-      verify: {
-        toast_appeared: { type: "toast_appeared" },
-        no_errors: { type: "no_errors" },
-      },
-      test_data: { field_value: "TODO" },
-    },
-    submit_invalid: {
-      interaction: "submit form with empty required fields",
-      expected: ["validation errors shown on required fields"],
-      verify: {
-        error_shown: { type: "element_appeared", selector: "[role='alert'], .error, .text-red-500" },
       },
     },
   },
@@ -247,12 +163,6 @@ export function generateFeatureModel(
     if (!pageScan.success) continue
     if (options.excludeRoutes?.some((ex) => route.startsWith(ex))) continue
 
-    // Skip pages with only structural patterns
-    const meaningfulPatterns = pageScan.patterns.filter(
-      (p) => !STRUCTURAL_PATTERNS.has(p.type),
-    )
-    if (meaningfulPatterns.length === 0) continue
-
     // Generate feature name from route
     const featureName = routeToFeatureName(route)
     if (!featureName) continue
@@ -260,7 +170,6 @@ export function generateFeatureModel(
     // Skip if this is the auth page — handled separately
     const isAuthPage = pageScan.patterns.some((m) => m.type === "auth_form")
     if (isAuthPage) {
-      // Auth feature always gets generated
       features.authentication = generateAuthFeature(pageScan, route)
       continue
     }
@@ -271,23 +180,32 @@ export function generateFeatureModel(
       requires.push("authenticated")
     }
 
-    // Generate capabilities from patterns
-    const capabilities = generateCapabilitiesFromPatterns(
-      meaningfulPatterns,
-      pageScan,
+    // Filter out structural-only patterns for capability generation
+    const meaningfulPatterns = pageScan.patterns.filter(
+      (p) => !STRUCTURAL_PATTERNS.has(p.type),
     )
 
-    if (Object.keys(capabilities).length === 0) continue
+    // Generate capabilities from patterns (may be empty)
+    const capabilities = meaningfulPatterns.length > 0
+      ? generateCapabilitiesFromPatterns(meaningfulPatterns, pageScan)
+      : {}
 
-    // Merge with existing feature (multiple patterns on same page)
+    // Every successfully crawled route gets a feature with a health block
+    const health = buildHealthBlock(route, pageScan)
+
     if (features[featureName]) {
       Object.assign(features[featureName].capabilities, capabilities)
+      // Keep the first health block (don't overwrite)
+      if (!features[featureName].health) {
+        features[featureName].health = health
+      }
     } else {
       features[featureName] = {
         description: generateDescription(featureName, pageScan),
         route,
         requires,
         capabilities,
+        health,
       }
     }
   }
@@ -323,12 +241,6 @@ function generateCapabilitiesFromPatterns(
       if (seenCapabilities.has(capName)) continue
       seenCapabilities.add(capName)
 
-      // Skip pagination if no pagination element detected
-      if (capName === "pagination" && pattern.details) {
-        const pagination = pattern.details.pagination as { present?: boolean } | undefined
-        if (pagination && !pagination.present) continue
-      }
-
       // Refine selectors if pattern details available
       const verify = { ...template.verify }
 
@@ -339,19 +251,10 @@ function generateCapabilitiesFromPatterns(
         ...(template.preconditions && { preconditions: [...template.preconditions] }),
         ...(template.cleanup && { cleanup: template.cleanup }),
         ...(template.test_data && { test_data: { ...template.test_data } }),
+        source: "init",
+        mode: "passive",
         _confidence: "init",
         _observed: 0,
-      }
-    }
-
-    // Enrich: if we have search_filter alongside data_table, link them
-    if (pattern.type === "search_filter") {
-      const hasTable = patterns.some((p) => p.type === "data_table" || p.type === "crud_page")
-      if (hasTable && capabilities.search) {
-        capabilities.search.preconditions = ["view_list"]
-      }
-      if (hasTable && capabilities.clear_search) {
-        capabilities.clear_search.preconditions = ["search"]
       }
     }
   }
@@ -372,6 +275,8 @@ function generateAuthFeature(
       expected: [...template.expected],
       verify: { ...template.verify },
       ...(template.test_data && { test_data: { ...template.test_data } }),
+      source: "init",
+      mode: "passive",
       _confidence: "init",
       _observed: 0,
     }
@@ -423,6 +328,53 @@ function generateDescription(featureName: string, pageScan: PageScanData): strin
   if (patternTypes.includes("data_table")) return `View and manage ${name}`
   if (patternTypes.includes("form_generic")) return `${name} settings`
   return `${name.charAt(0).toUpperCase() + name.slice(1)} page`
+}
+
+// ─── Health Block Helpers ────────────────────────────────────────────────────
+
+function buildHealthBlock(route: string, pageScan: PageScanData): HealthBlock {
+  const landmark = pickInitLandmark(pageScan)
+  return {
+    route,
+    ...(landmark && { landmark }),
+    checks: [
+      { type: "url_is", value: route },
+      { type: "no_js_errors" },
+      { type: "no_console_errors" },
+      { type: "no_error_alerts" },
+    ],
+  }
+}
+
+function pickInitLandmark(pageScan: PageScanData): { selector: string; text: string } | null {
+  const lm = pageScan.landmarks
+
+  // 1. data-page attribute (most stable, explicitly set by developers)
+  if (lm?.dataPages && lm.dataPages.length > 0) {
+    return { selector: `[data-page="${lm.dataPages[0]}"]`, text: lm.dataPages[0] }
+  }
+
+  // 2. data-testid (stable across deploys)
+  if (lm?.dataTestIds && lm.dataTestIds.length > 0) {
+    return { selector: `[data-testid="${lm.dataTestIds[0]}"]`, text: lm.dataTestIds[0] }
+  }
+
+  // 3. h1 text (visible page heading)
+  if (lm?.h1 && lm.h1.length > 1 && !/loading/i.test(lm.h1)) {
+    return { selector: "h1", text: lm.h1 }
+  }
+
+  // 4. h2 text (secondary heading fallback)
+  if (lm?.h2 && lm.h2.length > 1 && !/loading/i.test(lm.h2)) {
+    return { selector: "h2", text: lm.h2 }
+  }
+
+  // 5. Page title (least specific but always available)
+  if (pageScan.title && pageScan.title.length > 2 && !/loading/i.test(pageScan.title)) {
+    return { selector: "title", text: pageScan.title }
+  }
+
+  return null
 }
 
 // ─── Instructions Generator ──────────────────────────────────────────────────

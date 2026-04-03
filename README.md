@@ -5,12 +5,18 @@ AI-powered testing agent for web applications. Learns your app by watching you u
 ## How It Works
 
 ```
-1. INIT    → Scans your app, builds a feature model
-2. LEARN   → You use the app, agent watches and records
-3. TEST    → Health checks every page (landmark-based)
+1. INIT    → Scans your app, builds a feature model with route-level health checks
+2. LEARN   → You use the app, agent watches and records E2E flows
+3. TEST    → Health checks every page (no false positives from empty states)
 4. E2E     → Replays recorded workflows end-to-end
 5. HEAL    → Auto-fixes broken selectors when UI changes
 ```
+
+## Documentation
+
+- **[USAGE_GUIDE.md](USAGE_GUIDE.md)** — Complete usage guide with examples for every command
+- **[SYSTEM_CONTEXT.md](SYSTEM_CONTEXT.md)** — Architecture, implementation details, and progress
+- **[docs/](docs/)** — Design docs, plans, and analysis
 
 ## Installation
 
@@ -36,16 +42,19 @@ echo 'TEST_EMAIL="test@x.com"' >> .env
 echo 'TEST_PASSWORD="secret"' >> .env
 echo 'QA_PREVIEW_URL="http://localhost:3000"' >> .env
 
-# 1. Initialize — scan your app and build the feature model
+# 1. Initialize — scan your app and build a draft passive feature model
 node scripts/init.js
 
-# 2. Learn — open browser, use your app, agent records capabilities and E2E flows
-node scripts/learn.js
+# If your app needs setup first (practice/org/workspace selection), record bootstrap once
+node scripts/init.js --record-bootstrap --no-headless
 
-# 3. Health check — verify every page loads correctly
+# 2. Health check — validate draft passive coverage
 node scripts/run-test.js
 
-# 4. E2E replay — replay recorded flows
+# 3. Learn — open browser, use your app, agent records real interactions and E2E flows
+node scripts/learn.js
+
+# 4. E2E replay — replay recorded learned flows
 node scripts/run-e2e.js
 
 # 5. Auto-heal — fix broken selectors after UI changes
@@ -56,10 +65,24 @@ node scripts/run-e2e.js --heal
 
 ### `init.js` — Initialize Feature Model
 
-Crawls your app, discovers routes, and builds `QA_FEATURE_MODEL.json`.
+Crawls your app, discovers routes, and builds `QA_FEATURE_MODEL.json` with route-level health blocks.
+
+Every discovered route gets:
+- **Health checks**: `url_is`, `no_js_errors`, `no_console_errors`, `no_error_alerts`
+- **Landmark**: page identity (data-page > data-testid > h1 > h2 > title)
+- **Pattern capabilities**: `view_list` for tables/CRUD (no row/table assertions — empty states pass)
+
+Init generates passive coverage only. Use `learn.js` to add interaction coverage (CRUD, search, forms).
 
 ```bash
+# Correct npm forwarding
+npm run init -- --url http://localhost:3000 --email test@x.com --password secret
+
+# Direct script usage
 node scripts/init.js --url http://localhost:3000 --email test@x.com --password secret
+
+# Record setup/bootstrap first if the app needs practice/org/workspace selection
+npm run init -- --url http://localhost:3000 --email test@x.com --password secret --record-bootstrap --no-headless
 ```
 
 | Flag | Description | Default |
@@ -69,10 +92,46 @@ node scripts/init.js --url http://localhost:3000 --email test@x.com --password s
 | `--password` | Login password | `$TEST_PASSWORD` |
 | `--output` | Model output path | `./QA_FEATURE_MODEL.json` |
 | `--max-pages` | Max pages to crawl | `50` |
+| `--record-bootstrap` | Record setup steps before scanning | `false` |
+| `--use-bootstrap` | Force replay of saved bootstrap | `false` |
+| `--no-bootstrap` | Do not replay saved bootstrap | `false` |
+| `--bootstrap-file` | Bootstrap file path | `./QA_INIT_BOOTSTRAP.json` |
+
+**Init bootstrap examples:**
+
+```bash
+# Record setup once
+npm run init -- --url http://localhost:3000 --email john@mail.com --password 123456 --record-bootstrap --no-headless
+
+# Reuse saved bootstrap explicitly
+npm run init -- --url http://localhost:3000 --email john@mail.com --password 123456 --use-bootstrap
+
+# Reuse saved bootstrap automatically (default if file exists)
+npm run init -- --url http://localhost:3000 --email john@mail.com --password 123456
+
+# Ignore saved bootstrap for one run
+npm run init -- --url http://localhost:3000 --email john@mail.com --password 123456 --no-bootstrap
+```
+
+During bootstrap recording:
+
+- perform login/practice/org/setup in the browser
+- watch for `Recorded N bootstrap events...`
+- press `d` in the terminal when the app is ready for scanning
+
+See [USAGE_GUIDE.md](USAGE_GUIDE.md#bootstrap-setup) for a focused walkthrough.
 
 ### `learn.js` — Interactive Learning Session
 
 Opens a browser, watches your interactions, and records capabilities and E2E flows.
+
+Use `learn.js` to add the interaction coverage that init deliberately does not guess:
+
+- create/edit/delete
+- submit form / submit invalid
+- search / clear search
+- sort / pagination
+- invalid login and other edge cases
 
 ```bash
 node scripts/learn.js --url http://localhost:3000 --email test@x.com --password secret
@@ -137,9 +196,14 @@ Credentials are auto-parameterized as `$EMAIL`/`$PASSWORD` so flows are portable
 
 ### `run-test.js` — Health Check Runner
 
-Navigates to every feature route and verifies pages load correctly using landmark-based checks.
+Navigates to every feature route and verifies passive coverage from `QA_FEATURE_MODEL.json`.
+
+On a fresh init-only model, `run-test.js` is a draft health runner. It does not replay workflow interactions such as form submission, CRUD, search, or sort unless that behavior is later learned and modeled explicitly.
 
 ```bash
+# Important: use `--` so npm forwards flags to the script
+npm run test:full -- --url http://localhost:3000 --email test@x.com --password secret
+
 # Smoke test (navigation-only capabilities)
 node scripts/run-test.js --url http://localhost:3000 --email test@x.com --password secret
 
@@ -161,16 +225,31 @@ node scripts/run-test.js --url http://localhost:3000 --features dashboard,report
 | `--output-dir` | Results directory | `./qa-results` |
 | `--no-headless` | Show browser window | headless |
 | `--timeout` | Navigation timeout (ms) | `10000` |
+| `--include-init` | Run unlearned skeleton capabilities too | `false` |
 
-**Health Checks (V2):**
+Unsupported flags for `run-test.js`:
+- `--slow-mo`
+- `--heal`
+- `--stop-on-fail`
 
-| Check | What it verifies |
-|-------|-----------------|
-| `no_js_errors` | No uncaught JavaScript errors |
-| `no_console_errors` | No console.error output |
-| `no_error_alerts` | No visible error banners/alerts |
-| `url_is` | URL matches expected route |
-| `landmark_visible` | Page identity element present (h1, data-testid, etc.) |
+Those belong to `run-e2e.js`, not `run-test.js`.
+
+Correct npm usage:
+
+```bash
+npm run test:full -- --url http://localhost:3000 --email john@mail.com --password 123456 --no-headless
+```
+
+**Health Checks:**
+
+| Check | What it verifies | Failure Category |
+|-------|-----------------|-----------------|
+| `url_is` | URL matches expected route | — |
+| `no_js_errors` | No uncaught JavaScript errors | `hydration_error` or `runtime_error` |
+| `no_console_errors` | No console.error() output | `console_error` |
+| `no_error_alerts` | No visible error banners/alerts | — |
+| `no_request_failures` | No failed API requests (fetch/xhr) | `request_failure` |
+| `landmark_visible` | Page identity element present | — |
 
 **Output:**
 - `qa-results/summary.json` — Structured results
@@ -184,6 +263,9 @@ Exit code: `0` if all pass, `1` if any fail.
 Replays recorded E2E flows against a live app and verifies outcomes.
 
 ```bash
+# Correct npm forwarding
+npm run e2e -- --url http://localhost:3000 --email john@mail.com --password 123456 --no-headless
+
 # Run all recorded flows
 node scripts/run-e2e.js --url http://localhost:3000 --email john@mail.com --password 123456
 
@@ -409,7 +491,7 @@ export $(grep GITHUB_PKG_TOKEN .env | xargs) && npm publish
 git push origin main --tags
 ```
 
-See the [CI/CD Deployment Guide](CICD_DEPLOYMENT_GUIDE.md) for full details.
+See [docs/CICD_DEPLOYMENT_GUIDE.md](docs/CICD_DEPLOYMENT_GUIDE.md) for full details.
 
 ### What Gets Published
 
