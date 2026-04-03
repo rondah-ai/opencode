@@ -14,7 +14,9 @@
 
 const fs = require("fs")
 const path = require("path")
+const readline = require("readline")
 const { chromium } = require("playwright")
+const { getBootstrapFile, shouldUseBootstrap, loadBootstrap, replayBootstrap } = require("../lib/bootstrap")
 
 // ─── CLI Args ────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,22 @@ const config = {
   instructionsOnly: hasFlag("--instructions"),
   timeout: parseInt(getArg("--timeout") || "30000", 10),
   headless: !hasFlag("--no-headless") && getArg("--headless") !== "false",
+  recordBootstrap: hasFlag("--record-bootstrap"),
+  useBootstrap: hasFlag("--use-bootstrap"),
+  noBootstrap: hasFlag("--no-bootstrap"),
+  bootstrapFile: getArg("--bootstrap-file") || getBootstrapFile(),
+}
+
+const unexpectedPositionals = args.filter((arg) => !arg.startsWith("--"))
+const looksLikeMisforwardedNpmArgs = unexpectedPositionals.some(
+  (arg) => /^https?:\/\//.test(arg) || arg.includes("@") || /^\d+$/.test(arg),
+)
+
+if (looksLikeMisforwardedNpmArgs && !hasFlag("--url")) {
+  console.error("Error: script arguments appear to have been swallowed by npm.")
+  console.error("Use `npm run init -- --url http://localhost:3000 --email test@x.com --password secret`.")
+  console.error("Received positional args:", unexpectedPositionals.join(" "))
+  process.exit(1)
 }
 
 if (!config.url) {
@@ -55,8 +73,97 @@ console.log(`URL:        ${config.url}`)
 console.log(`Max pages:  ${config.maxPages}`)
 console.log(`Auth:       ${config.email ? "yes" : "no"}`)
 console.log(`Output:     ${path.resolve(config.outputDir)}`)
+if (config.recordBootstrap) console.log(`Bootstrap:  recording -> ${path.resolve(config.bootstrapFile)}`)
+if (!config.recordBootstrap && shouldUseBootstrap(config)) console.log(`Bootstrap:  using ${path.resolve(config.bootstrapFile)}`)
 console.log("=".repeat(50))
 console.log("")
+
+const TRACKER_SCRIPT = `
+(() => {
+  if (window.__qaBootstrapTracker) return;
+  window.__qaBootstrapTracker = {
+    events: [],
+    init() {
+      document.addEventListener('click', (e) => {
+        const target = e.target.closest('button, a, input, select, textarea, li, [role="button"], [role="tab"], [role="menuitem"], [role="combobox"], [role="option"], [data-value], [cmdk-item]');
+        if (!target) return;
+        this.events.push({
+          type: 'click',
+          timestamp: Date.now(),
+          selector: this.getSelector(target),
+          text: (target.textContent || '').trim().slice(0, 100),
+          url: window.location.href,
+        });
+      }, { capture: true });
+      document.addEventListener('input', (e) => {
+        const target = e.target;
+        if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+        this.events.push({
+          type: 'input',
+          timestamp: Date.now(),
+          selector: this.getSelector(target),
+          value: target.type === 'password' ? '***' : target.value,
+          field: target.placeholder || target.name || target.id || target.getAttribute('aria-label') || 'unknown',
+          url: window.location.href,
+        });
+      }, { capture: true });
+      document.addEventListener('change', (e) => {
+        const target = e.target;
+        if (target.tagName !== 'SELECT') return;
+        this.events.push({
+          type: 'select',
+          timestamp: Date.now(),
+          selector: this.getSelector(target),
+          value: target.value,
+          text: target.options[target.selectedIndex] ? target.options[target.selectedIndex].textContent.trim() : target.value,
+          url: window.location.href,
+        });
+      }, { capture: true });
+      document.addEventListener('submit', (e) => {
+        this.events.push({
+          type: 'submit',
+          timestamp: Date.now(),
+          selector: this.getSelector(e.target),
+          url: window.location.href,
+        });
+      }, { capture: true });
+      const orig = history.pushState;
+      const tracker = this;
+      history.pushState = function() {
+        orig.apply(this, arguments);
+        tracker.events.push({ type: 'navigation', timestamp: Date.now(), selector: '', url: window.location.href });
+      };
+      window.addEventListener('popstate', () => {
+        tracker.events.push({ type: 'navigation', timestamp: Date.now(), selector: '', url: window.location.href });
+      });
+    },
+    flush() {
+      const events = [...this.events];
+      this.events = [];
+      return events;
+    },
+    getSelector(el) {
+      if (!el) return '';
+      if (el.id && !el.id.match(/^(:|react|ember|vue|radix|rc-|headlessui|downshift|mui)/)) return '#' + el.id;
+      const testId = el.getAttribute && el.getAttribute('data-testid');
+      if (testId) return '[data-testid="' + testId + '"]';
+      const dataValue = el.getAttribute && el.getAttribute('data-value');
+      if (dataValue) return '[data-value="' + dataValue + '"]';
+      if (el.getAttribute && el.getAttribute('aria-label')) return el.tagName.toLowerCase() + '[aria-label="' + el.getAttribute('aria-label') + '"]';
+      if (el.getAttribute && el.getAttribute('role') === 'option') {
+        const text = (el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 40);
+        if (text) return '[role="option"]:has-text("' + text.replace(/"/g, '\\"') + '")';
+      }
+      if (el.name) return el.tagName.toLowerCase() + '[name="' + el.name + '"]';
+      if (el.type) return el.tagName.toLowerCase() + '[type="' + el.type + '"]';
+      const text = (el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 40);
+      if (text && ['button', 'a'].includes(el.tagName.toLowerCase())) return el.tagName.toLowerCase() + ':has-text("' + text.replace(/"/g, '\\"') + '")';
+      return el.tagName.toLowerCase();
+    }
+  };
+  window.__qaBootstrapTracker.init();
+})();
+`
 
 // ─── Pattern Recognition (inline — mirrors qa/patterns.ts) ──────────────────
 
@@ -139,109 +246,22 @@ const PATTERN_CAPABILITY_MAP = {
         no_errors: { type: "no_errors" },
       },
     },
-    login_invalid: {
-      interaction: "fill invalid credentials, click submit",
-      expected: ["error message appears", "stays on login page"],
-      verify: {
-        error_shown: { type: "element_appeared", selector: "[role='alert'], .text-red-500, .error" },
-      },
-      test_data: { email: "invalid@example.com", password: "wrongpassword" },
-    },
   },
   data_table: {
     view_list: {
       interaction: "navigate to page",
-      expected: ["table with records visible"],
+      expected: ["page loads without errors"],
       verify: {
-        table_visible: { type: "custom_selector_visible", selector: "table, [role='grid']" },
-        has_rows: { type: "element_appeared", selector: "tbody tr, [role='row']" },
         no_errors: { type: "no_errors" },
       },
-    },
-    sort: {
-      interaction: "click column header to sort",
-      expected: ["table row order changes", "sort indicator appears"],
-      verify: { rows_changed: { type: "element_count_changed", selector: "tbody tr" } },
-      preconditions: ["view_list"],
-    },
-    pagination: {
-      interaction: "click next page or page number in pagination controls",
-      expected: ["table rows update to show next page of data"],
-      verify: {
-        rows_changed: { type: "element_count_changed", selector: "tbody tr" },
-        no_errors: { type: "no_errors" },
-      },
-      preconditions: ["view_list"],
     },
   },
   crud_page: {
     view_list: {
       interaction: "navigate to page",
-      expected: ["list or table of records visible"],
+      expected: ["page loads without errors"],
       verify: {
-        table_visible: { type: "custom_selector_visible", selector: "table, [role='grid']" },
-        has_rows: { type: "element_appeared", selector: "tbody tr, [role='row']" },
         no_errors: { type: "no_errors" },
-      },
-    },
-    create: {
-      interaction: "click Add/Create button, fill form, submit",
-      expected: ["new record appears in list", "success toast or confirmation"],
-      verify: {
-        element_appeared: { type: "element_appeared", selector: "tbody tr" },
-        toast_appeared: { type: "toast_appeared" },
-        no_errors: { type: "no_errors" },
-      },
-      preconditions: ["view_list"],
-      cleanup: "delete the created record if possible",
-      test_data: { name: "TODO", description: "TODO" },
-    },
-    edit: {
-      interaction: "click Edit on a record, modify fields, submit",
-      expected: ["record updated in list", "success toast or confirmation"],
-      verify: { toast_appeared: { type: "toast_appeared" }, no_errors: { type: "no_errors" } },
-      preconditions: ["view_list"],
-    },
-    delete: {
-      interaction: "click Delete on a record, confirm in dialog",
-      expected: ["record removed from list", "success toast or confirmation"],
-      verify: {
-        element_disappeared: { type: "element_disappeared", selector: "tbody tr" },
-        no_errors: { type: "no_errors" },
-      },
-      preconditions: ["view_list"],
-    },
-  },
-  search_filter: {
-    search: {
-      interaction: "type search term in search input, wait for results to update",
-      expected: ["displayed results filtered to match search term"],
-      verify: {
-        rows_changed: { type: "element_count_changed", selector: "tbody tr" },
-        no_errors: { type: "no_errors" },
-      },
-      cleanup: "clear search input",
-      test_data: { search_term: "TODO" },
-    },
-    clear_search: {
-      interaction: "clear the search input or click clear button",
-      expected: ["full unfiltered results restored"],
-      verify: { rows_changed: { type: "element_count_changed", selector: "tbody tr" } },
-      preconditions: ["search"],
-    },
-  },
-  form_generic: {
-    submit_form: {
-      interaction: "fill all required fields, click submit",
-      expected: ["form submitted successfully", "success toast or redirect"],
-      verify: { toast_appeared: { type: "toast_appeared" }, no_errors: { type: "no_errors" } },
-      test_data: { field_value: "TODO" },
-    },
-    submit_invalid: {
-      interaction: "submit form with empty required fields",
-      expected: ["validation errors shown on required fields"],
-      verify: {
-        error_shown: { type: "element_appeared", selector: "[role='alert'], .error, .text-red-500" },
       },
     },
   },
@@ -256,7 +276,36 @@ async function main() {
 
   try {
     // Launch browser
-    browser = await chromium.launch({ headless: config.headless })
+    browser = await chromium.launch({ headless: config.recordBootstrap ? false : config.headless })
+
+    const hasCreds = config.email && config.password
+    const origin = new URL(config.url).origin
+    let authRoute = null
+    let preAuthModel = {}
+    let postAuthModel = {}
+    let stepNum = 1
+
+    // ── Bootstrap recording (separate context — discarded after recording) ──
+    if (config.recordBootstrap) {
+      const recordCtx = await browser.newContext({
+        viewport: { width: 1920, height: 1080 },
+        ignoreHTTPSErrors: true,
+      })
+      const recordPage = await recordCtx.newPage()
+
+      console.log(`Step ${stepNum}: Recording bootstrap setup...`)
+      const bootstrap = await recordBootstrap(recordPage, config.url)
+      saveBootstrap(bootstrap)
+      console.log(`  Saved: ${path.resolve(config.bootstrapFile)}`)
+      console.log("")
+      stepNum++
+
+      // Close recording context entirely — its auth state must not leak into replay
+      await recordPage.close()
+      await recordCtx.close()
+    }
+
+    // ── Fresh context for scanning (and bootstrap replay if needed) ──
     const context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
       ignoreHTTPSErrors: true,
@@ -274,18 +323,23 @@ async function main() {
       consoleErrors.push({ type: "pageerror", text: err.message, url: page.url() })
     })
 
-    const hasCreds = config.email && config.password
-    const origin = new URL(config.url).origin
-    let authRoute = null
-    let preAuthModel = {}
-    let postAuthModel = {}
-    let stepNum = 1
+    if (shouldUseBootstrap(config)) {
+      console.log(`Step ${stepNum}: Replaying bootstrap setup...`)
+      const bootstrap = loadBootstrap(config)
+      await replayBootstrap(page, bootstrap, config)
+      console.log(`  Ready at: ${new URL(page.url()).pathname}`)
+      console.log("")
+      stepNum++
+    }
+
+    const bootstrapLandedAuthenticated = shouldUseBootstrap(config) && !/(auth|login|sign-in)/i.test(new URL(page.url()).pathname)
 
     // ── Phase A: Pre-auth crawl (shallow if creds provided) ──
-    const preAuthMaxPages = hasCreds ? Math.min(config.maxPages, 10) : config.maxPages
-    const preAuthMaxDepth = hasCreds ? 3 : Infinity
-    console.log(`Step ${stepNum}: Scanning ${hasCreds ? "public" : ""} pages...`)
-    const preAuthResult = await crawlPages(page, [config.url], origin, {
+    const preAuthMaxPages = hasCreds && !bootstrapLandedAuthenticated ? Math.min(config.maxPages, 10) : config.maxPages
+    const preAuthMaxDepth = hasCreds && !bootstrapLandedAuthenticated ? 3 : Infinity
+    console.log(`Step ${stepNum}: Scanning ${hasCreds && !bootstrapLandedAuthenticated ? "public" : ""} pages...`)
+    const crawlStartUrl = shouldUseBootstrap(config) ? page.url() : config.url
+    const preAuthResult = await crawlPages(page, [crawlStartUrl], origin, {
       maxPages: preAuthMaxPages,
       maxDepth: preAuthMaxDepth,
       timeout: config.timeout,
@@ -293,10 +347,14 @@ async function main() {
       consoleErrors,
     })
     preAuthModel = preAuthResult.siteModel
-    console.log(`\n  Scanned ${Object.keys(preAuthModel).length} ${hasCreds ? "public " : ""}pages`)
+    console.log(`\n  Scanned ${Object.keys(preAuthModel).length} ${hasCreds && !bootstrapLandedAuthenticated ? "public " : ""}pages`)
     stepNum++
 
-    if (hasCreds) {
+    if (hasCreds && bootstrapLandedAuthenticated) {
+      console.log(`\nStep ${stepNum}: Bootstrap provided authenticated context...`)
+      console.log(`  Continuing from: ${new URL(page.url()).pathname}`)
+      stepNum++
+    } else if (hasCreds) {
       // ── Phase B: Find login page ──
       console.log(`\nStep ${stepNum}: Finding login page...`)
       const loginPage = await findLoginPage(preAuthModel, page, origin, config.timeout)
@@ -465,6 +523,144 @@ async function main() {
   } finally {
     if (browser) await browser.close()
   }
+}
+
+function saveBootstrap(bootstrap) {
+  fs.writeFileSync(config.bootstrapFile, JSON.stringify(bootstrap, null, 2))
+}
+
+async function recordBootstrap(page, startUrl) {
+  await page.goto(startUrl, { waitUntil: "domcontentloaded", timeout: config.timeout })
+  await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {})
+  await page.addInitScript(TRACKER_SCRIPT)
+  await page.evaluate(TRACKER_SCRIPT).catch(() => {})
+
+  readline.emitKeypressEvents(process.stdin)
+  const wasRaw = !!process.stdin.isRaw
+  if (process.stdin.isTTY && !wasRaw) process.stdin.setRawMode(true)
+  let done = false
+  let eventCount = 0
+
+  console.log("  Perform any required setup now in the browser.")
+  console.log("  Examples: sign in, select practice, choose org, dismiss onboarding.")
+  console.log("  Press [d] when the app is ready for scanning. Press [Ctrl+C] to cancel.\n")
+
+  const recordedEvents = []
+  const pollTimer = setInterval(async () => {
+    try {
+      const events = await page.evaluate(() => {
+        if (!window.__qaBootstrapTracker) return []
+        return window.__qaBootstrapTracker.flush()
+      })
+      if (Array.isArray(events) && events.length > 0) {
+        recordedEvents.push(...events)
+        eventCount += events.length
+        process.stdout.write(`  Recorded ${eventCount} bootstrap events...\r`)
+      }
+    } catch { /* page navigating */ }
+  }, 400)
+
+  await new Promise((resolve, reject) => {
+    const onKeypress = (_str, key) => {
+      if (key?.sequence?.toLowerCase() === "d") {
+        done = true
+        process.stdin.off("keypress", onKeypress)
+        resolve()
+        return
+      }
+      if (key?.ctrl && key?.name === "c") {
+        process.stdin.off("keypress", onKeypress)
+        reject(new Error("Bootstrap recording cancelled"))
+      }
+    }
+
+    process.stdin.on("keypress", onKeypress)
+  })
+
+  clearInterval(pollTimer)
+  process.stdout.write("\n")
+  if (process.stdin.isTTY && !wasRaw) process.stdin.setRawMode(false)
+
+  if (!done) {
+    throw new Error("Bootstrap recording did not complete")
+  }
+
+  try {
+    const finalEvents = await page.evaluate(() => {
+      if (!window.__qaBootstrapTracker) return []
+      return window.__qaBootstrapTracker.flush()
+    })
+    if (Array.isArray(finalEvents) && finalEvents.length > 0) recordedEvents.push(...finalEvents)
+  } catch { /* ignore */ }
+
+  const finalUrl = page.url()
+  const finalRoute = new URL(finalUrl).pathname
+  const finalLandmark = await detectBootstrapLandmark(page)
+
+  return {
+    version: "1.0",
+    baseUrl: config.url,
+    createdAt: new Date().toISOString(),
+    finalUrl,
+    finalRoute,
+    finalLandmark,
+    steps: compressBootstrapEvents(recordedEvents),
+  }
+}
+
+
+function compressBootstrapEvents(events) {
+  const steps = []
+
+  for (const event of events) {
+    if (!event || !event.type) continue
+    if (event.type === "navigation") {
+      if (steps.length === 0 || steps[steps.length - 1].type !== "navigation" || steps[steps.length - 1].url !== event.url) {
+        steps.push({ type: "navigation", url: event.url })
+      }
+      continue
+    }
+
+    if (event.type === "input" || event.type === "select") {
+      const value = parameterizeBootstrapValue(event.value)
+      const last = steps[steps.length - 1]
+      if (last && last.type === event.type && last.selector === event.selector) {
+        last.value = value
+      } else {
+        steps.push({ type: event.type, selector: event.selector, value, field: event.field || undefined })
+      }
+      continue
+    }
+
+    if (event.type === "click" || event.type === "submit") {
+      if (event.type === "submit" && steps.length > 0 && steps[steps.length - 1].type === "click") {
+        continue
+      }
+      steps.push({ type: event.type, selector: event.selector, text: event.text || undefined })
+    }
+  }
+
+  return steps
+}
+
+function parameterizeBootstrapValue(value) {
+  if (config.email && value === config.email) return "$EMAIL"
+  if (config.password && value === "***") return "$PASSWORD"
+  return value
+}
+
+async function detectBootstrapLandmark(page) {
+  const heading = await page.locator("h1:visible").first().textContent().catch(() => null)
+  if (heading && heading.trim()) {
+    return { type: "landmark_visible", selector: "h1", text: heading.trim().slice(0, 120) }
+  }
+
+  const title = await page.title().catch(() => "")
+  if (title) {
+    return { type: "landmark_visible", selector: "title", text: title.slice(0, 120) }
+  }
+
+  return null
 }
 
 // ─── Crawl & Discovery ──────────────────────────────────────────────────────
@@ -699,6 +895,17 @@ async function scanPage(page, url, origin, timeout, globalConsoleErrors) {
       } catch { /* stale */ }
     }
 
+    // Capture landmark candidates for health block generation
+    const landmarks = await page.evaluate(() => {
+      const h1 = document.querySelector("h1")?.textContent?.trim() || ""
+      const h2 = document.querySelector("h2")?.textContent?.trim() || ""
+      const dataPages = Array.from(document.querySelectorAll("[data-page]"))
+        .map(el => el.getAttribute("data-page")).filter(Boolean)
+      const dataTestIds = Array.from(document.querySelectorAll("[data-testid]"))
+        .map(el => el.getAttribute("data-testid")).filter(Boolean).slice(0, 5)
+      return { h1, h2, dataPages, dataTestIds }
+    }).catch(() => ({ h1: "", h2: "", dataPages: [], dataTestIds: [] }))
+
     // Outbound routes
     const outboundRoutes = await collectOutboundRoutes(page, origin)
 
@@ -717,6 +924,7 @@ async function scanPage(page, url, origin, timeout, globalConsoleErrors) {
       interactiveElements: { buttons, inputs, links: await page.locator("a[href]").count() },
       outboundRoutes,
       navLinks,
+      landmarks,
       consoleErrors,
       scanDuration: Date.now() - startTime,
       success: true,
@@ -730,6 +938,7 @@ async function scanPage(page, url, origin, timeout, globalConsoleErrors) {
       interactiveElements: { buttons: [], inputs: [], links: 0 },
       outboundRoutes: [],
       navLinks: [],
+      landmarks: { h1: "", h2: "", dataPages: [], dataTestIds: [] },
       consoleErrors: [],
       scanDuration: Date.now() - startTime,
       success: false,
@@ -841,9 +1050,6 @@ function generateFeatureModel(siteModel, options = {}) {
     if (!pageScan.success) continue
     if (options.excludeRoutes?.some((ex) => route.startsWith(ex))) continue
 
-    const meaningfulPatterns = pageScan.patterns.filter((p) => !STRUCTURAL_PATTERNS.has(p.type))
-    if (meaningfulPatterns.length === 0) continue
-
     const featureName = routeToFeatureName(route)
     if (!featureName) continue
 
@@ -856,17 +1062,24 @@ function generateFeatureModel(siteModel, options = {}) {
     const requires = []
     if (hasAuth && !isAuthPage) requires.push("authenticated")
 
-    const capabilities = generateCapabilities(meaningfulPatterns, pageScan)
-    if (Object.keys(capabilities).length === 0) continue
+    const meaningfulPatterns = pageScan.patterns.filter((p) => !STRUCTURAL_PATTERNS.has(p.type))
+    const capabilities = meaningfulPatterns.length > 0
+      ? generateCapabilities(meaningfulPatterns, pageScan)
+      : {}
+
+    // Every successfully crawled route gets a health block
+    const health = buildHealthBlock(route, pageScan)
 
     if (features[featureName]) {
       Object.assign(features[featureName].capabilities, capabilities)
+      if (!features[featureName].health) features[featureName].health = health
     } else {
       features[featureName] = {
         description: generateDescription(featureName, pageScan),
         route,
         requires,
         capabilities,
+        health,
       }
     }
   }
@@ -896,9 +1109,6 @@ function generateCapabilities(patterns, pageScan) {
       if (seen.has(capName)) continue
       seen.add(capName)
 
-      // Skip pagination if not detected
-      if (capName === "pagination" && pattern.details?.pagination && !pattern.details.pagination.present) continue
-
       capabilities[capName] = {
         interaction: template.interaction,
         expected: [...template.expected],
@@ -906,16 +1116,11 @@ function generateCapabilities(patterns, pageScan) {
         ...(template.preconditions && { preconditions: [...template.preconditions] }),
         ...(template.cleanup && { cleanup: template.cleanup }),
         ...(template.test_data && { test_data: { ...template.test_data } }),
+        source: "init",
+        mode: "passive",
         _confidence: "init",
         _observed: 0,
       }
-    }
-
-    // Link search to view_list if both exist
-    if (pattern.type === "search_filter") {
-      const hasTable = patterns.some((p) => p.type === "data_table" || p.type === "crud_page")
-      if (hasTable && capabilities.search) capabilities.search.preconditions = ["view_list"]
-      if (hasTable && capabilities.clear_search) capabilities.clear_search.preconditions = ["search"]
     }
   }
 
@@ -932,6 +1137,8 @@ function generateAuthFeature(pageScan, route) {
       expected: [...template.expected],
       verify: JSON.parse(JSON.stringify(template.verify)),
       ...(template.test_data && { test_data: { ...template.test_data } }),
+      source: "init",
+      mode: "passive",
       _confidence: "init",
       _observed: 0,
     }
@@ -943,6 +1150,40 @@ function generateAuthFeature(pageScan, route) {
     requires: [],
     capabilities,
   }
+}
+
+function buildHealthBlock(route, pageScan) {
+  const landmark = pickInitLandmark(pageScan)
+  return {
+    route,
+    ...(landmark && { landmark }),
+    checks: [
+      { type: "url_is", value: route },
+      { type: "no_js_errors" },
+      { type: "no_console_errors" },
+      { type: "no_error_alerts" },
+    ],
+  }
+}
+
+function pickInitLandmark(pageScan) {
+  const lm = pageScan.landmarks
+  if (lm?.dataPages?.length > 0) {
+    return { selector: `[data-page="${lm.dataPages[0]}"]`, text: lm.dataPages[0] }
+  }
+  if (lm?.dataTestIds?.length > 0) {
+    return { selector: `[data-testid="${lm.dataTestIds[0]}"]`, text: lm.dataTestIds[0] }
+  }
+  if (lm?.h1 && lm.h1.length > 1 && !/loading/i.test(lm.h1)) {
+    return { selector: "h1", text: lm.h1 }
+  }
+  if (lm?.h2 && lm.h2.length > 1 && !/loading/i.test(lm.h2)) {
+    return { selector: "h2", text: lm.h2 }
+  }
+  if (pageScan.title && pageScan.title.length > 2 && !/loading/i.test(pageScan.title)) {
+    return { selector: "title", text: pageScan.title }
+  }
+  return null
 }
 
 function routeToFeatureName(route) {

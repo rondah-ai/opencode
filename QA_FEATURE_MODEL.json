@@ -2,129 +2,202 @@
   "version": "1.0",
   "meta": {
     "generated_by": "init",
-    "learn_sessions": 2,
+    "learn_sessions": 0,
     "confidence": "skeleton",
-    "generated_at": "2026-03-31T16:44:41.433Z",
-    "last_session": "2026-03-31T22:55:38.299Z"
+    "generated_at": "2026-04-03T12:03:05.472Z"
   },
   "features": {
-    "authentication": {
-      "description": "User login and session management",
-      "route": "/auth/forgot-password",
+    "call_logs": {
+      "description": "Rondah AI Console",
+      "route": "/home/call-logs",
       "requires": [],
       "capabilities": {
-        "login": {
-          "interaction": "fill email and password fields, click submit",
+        "view_list": {
+          "interaction": "navigate to page",
           "expected": [
-            "redirect away from login page",
-            "navigation or dashboard visible"
+            "page loads without errors"
           ],
           "verify": {
-            "redirected": {
-              "type": "url_changed"
-            },
             "no_errors": {
               "type": "no_errors"
             }
           },
-          "_confidence": "init",
-          "_observed": 0
-        },
-        "login_invalid": {
-          "interaction": "fill invalid credentials, click submit",
-          "expected": [
-            "error message appears",
-            "stays on login page"
-          ],
-          "verify": {
-            "error_shown": {
-              "type": "element_appeared",
-              "selector": "[role='alert'], .text-red-500, .error"
-            }
-          },
-          "test_data": {
-            "email": "invalid@example.com",
-            "password": "wrongpassword"
-          },
+          "source": "init",
+          "mode": "passive",
           "_confidence": "init",
           "_observed": 0
         }
+      },
+      "health": {
+        "route": "/home/call-logs",
+        "landmark": {
+          "selector": "title",
+          "text": "Rondah AI Console"
+        },
+        "checks": [
+          {
+            "type": "url_is",
+            "value": "/home/call-logs"
+          },
+          {
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
+          }
+        ]
+      }
+    },
+    "actions": {
+      "description": "Rondah AI Console",
+      "route": "/home/actions",
+      "requires": [],
+      "capabilities": {},
+      "health": {
+        "route": "/home/actions",
+        "landmark": {
+          "selector": "h1",
+          "text": "Actions Centre"
+        },
+        "checks": [
+          {
+            "type": "url_is",
+            "value": "/home/actions"
+          },
+          {
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
+          }
+        ]
+      }
+    },
+    "system_health": {
+      "description": "Rondah AI Console",
+      "route": "/home/admin-hub/system-health",
+      "requires": [],
+      "capabilities": {
+        "view_list": {
+          "interaction": "navigate to page",
+          "expected": [
+            "page loads without errors"
+          ],
+          "verify": {
+            "no_errors": {
+              "type": "no_errors"
+            }
+          },
+          "source": "init",
+          "mode": "passive",
+          "_confidence": "init",
+          "_observed": 0
+        }
+      },
+      "health": {
+        "route": "/home/admin-hub/system-health",
+        "landmark": {
+          "selector": "h2",
+          "text": "Availability Audit"
+        },
+        "checks": [
+          {
+            "type": "url_is",
+            "value": "/home/admin-hub/system-health"
+          },
+          {
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
+          }
+        ]
+      }
+    },
+    "appointments": {
+      "description": "Rondah AI Console",
+      "route": "/home/appointments",
+      "requires": [],
+      "capabilities": {},
+      "health": {
+        "route": "/home/appointments",
+        "landmark": {
+          "selector": "h2",
+          "text": "PendingSort"
+        },
+        "checks": [
+          {
+            "type": "url_is",
+            "value": "/home/appointments"
+          },
+          {
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
+          }
+        ]
+      }
+    },
+    "appointments_v2": {
+      "description": "Rondah AI Console",
+      "route": "/home/appointments-v2",
+      "requires": [],
+      "capabilities": {},
+      "health": {
+        "route": "/home/appointments-v2",
+        "landmark": {
+          "selector": "title",
+          "text": "Rondah AI Console"
+        },
+        "checks": [
+          {
+            "type": "url_is",
+            "value": "/home/appointments-v2"
+          },
+          {
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
+          }
+        ]
       }
     },
     "dashboard": {
       "description": "Rondah AI Console",
       "route": "/home/dashboard",
-      "requires": [
-        "authenticated"
-      ],
+      "requires": [],
       "capabilities": {
         "view_list": {
           "interaction": "navigate to page",
           "expected": [
-            "table with records visible"
+            "page loads without errors"
           ],
           "verify": {
-            "table_visible": {
-              "type": "custom_selector_visible",
-              "selector": "table, [role='grid']"
-            },
-            "has_rows": {
-              "type": "element_appeared",
-              "selector": "tbody tr, [role='row']"
-            },
             "no_errors": {
               "type": "no_errors"
             }
           },
+          "source": "init",
+          "mode": "passive",
           "_confidence": "init",
           "_observed": 0
-        },
-        "sort": {
-          "interaction": "click column header to sort",
-          "expected": [
-            "table row order changes",
-            "sort indicator appears"
-          ],
-          "verify": {
-            "rows_changed": {
-              "type": "element_count_changed",
-              "selector": "tbody tr"
-            }
-          },
-          "preconditions": [
-            "view_list"
-          ],
-          "_confidence": "init",
-          "_observed": 0
-        },
-        "action_2": {
-          "interaction": "navigated to /home/dashboard",
-          "expected": [
-            "page navigates to /home/dashboard",
-            "tbody tr count changes",
-            "[role='dialog'] disappears",
-            "[role='alert'] count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
         }
       },
       "health": {
@@ -135,6 +208,10 @@
         },
         "checks": [
           {
+            "type": "url_is",
+            "value": "/home/dashboard"
+          },
+          {
             "type": "no_js_errors"
           },
           {
@@ -142,15 +219,34 @@
           },
           {
             "type": "no_error_alerts"
-          },
+          }
+        ]
+      }
+    },
+    "my_settings": {
+      "description": "Rondah AI Console",
+      "route": "/home/notifications/my-settings",
+      "requires": [],
+      "capabilities": {},
+      "health": {
+        "route": "/home/notifications/my-settings",
+        "landmark": {
+          "selector": "title",
+          "text": "Rondah AI Console"
+        },
+        "checks": [
           {
             "type": "url_is",
-            "value": "/home/dashboard"
+            "value": "/home/notifications/my-settings"
           },
           {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "Analytics"
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
           }
         ]
       }
@@ -158,81 +254,36 @@
     "practice": {
       "description": "Rondah AI Console",
       "route": "/home/notifications/practice",
-      "requires": [
-        "authenticated"
-      ],
-      "capabilities": {
-        "submit_form": {
-          "interaction": "fill all required fields, click submit",
-          "expected": [
-            "form submitted successfully",
-            "success toast or redirect"
-          ],
-          "verify": {
-            "toast_appeared": {
-              "type": "toast_appeared"
-            },
-            "no_errors": {
-              "type": "no_errors"
-            }
-          },
-          "test_data": {
-            "field_value": "TODO"
-          },
-          "_confidence": "init",
-          "_observed": 0
+      "requires": [],
+      "capabilities": {},
+      "health": {
+        "route": "/home/notifications/practice",
+        "landmark": {
+          "selector": "h1",
+          "text": "Notifications Config"
         },
-        "submit_invalid": {
-          "interaction": "submit form with empty required fields",
-          "expected": [
-            "validation errors shown on required fields"
-          ],
-          "verify": {
-            "error_shown": {
-              "type": "element_appeared",
-              "selector": "[role='alert'], .error, .text-red-500"
-            }
+        "checks": [
+          {
+            "type": "url_is",
+            "value": "/home/notifications/practice"
           },
-          "_confidence": "init",
-          "_observed": 0
-        }
+          {
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
+          }
+        ]
       }
     },
     "reports": {
-      "description": "reports page",
+      "description": "Rondah AI Console",
       "route": "/home/reports",
       "requires": [],
-      "capabilities": {
-        "action_1": {
-          "interaction": "navigated to /home/reports",
-          "expected": [
-            "page navigates to /home/reports",
-            "tbody tr appears",
-            "table appears",
-            "input:visible count changes"
-          ],
-          "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
-            }
-          },
-          "_confidence": "observed_1x",
-          "_observed": 1
-        }
-      },
+      "capabilities": {},
       "health": {
         "route": "/home/reports",
         "landmark": {
@@ -241,68 +292,53 @@
         },
         "checks": [
           {
-            "type": "no_js_errors"
-          },
-          {
-            "type": "no_console_errors"
-          },
-          {
-            "type": "no_error_alerts"
-          },
-          {
             "type": "url_is",
             "value": "/home/reports"
           },
           {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "Reports"
+            "type": "no_js_errors"
+          },
+          {
+            "type": "no_console_errors"
+          },
+          {
+            "type": "no_error_alerts"
           }
         ]
       }
     },
-    "practice_details": {
-      "description": "practice details page",
-      "route": "/home/configurations/practice-details",
+    "voicemails": {
+      "description": "Rondah AI Console",
+      "route": "/home/voicemails",
       "requires": [],
       "capabilities": {
-        "action_1": {
-          "interaction": "navigated to /home/configurations/practice-details",
+        "view_list": {
+          "interaction": "navigate to page",
           "expected": [
-            "page navigates to /home/configurations/practice-details",
-            "form appears",
-            "input:visible count changes",
-            "button:visible count changes"
+            "page loads without errors"
           ],
           "verify": {
-            "no_js_errors": {
-              "type": "no_js_errors"
-            },
-            "no_console_errors": {
-              "type": "no_console_errors"
-            },
-            "no_error_alerts": {
-              "type": "no_error_alerts"
-            },
-            "url_is": {
-              "type": "url_is"
-            },
-            "h1": {
-              "type": "landmark_visible",
-              "selector": "h1"
+            "no_errors": {
+              "type": "no_errors"
             }
           },
-          "_confidence": "observed_1x",
-          "_observed": 1
+          "source": "init",
+          "mode": "passive",
+          "_confidence": "init",
+          "_observed": 0
         }
       },
       "health": {
-        "route": "/home/configurations/practice-details",
+        "route": "/home/voicemails",
         "landmark": {
-          "selector": "h1",
-          "text": "Practice Details"
+          "selector": "title",
+          "text": "Rondah AI Console"
         },
         "checks": [
+          {
+            "type": "url_is",
+            "value": "/home/voicemails"
+          },
           {
             "type": "no_js_errors"
           },
@@ -311,25 +347,10 @@
           },
           {
             "type": "no_error_alerts"
-          },
-          {
-            "type": "url_is",
-            "value": "/home/configurations/practice-details"
-          },
-          {
-            "type": "landmark_visible",
-            "selector": "h1",
-            "text": "Practice Details"
           }
         ]
       }
     }
   },
-  "shared": {
-    "authenticated": {
-      "how": "fill email and password on login page, submit form",
-      "verify": "URL no longer contains login/sign-in path",
-      "route": "/auth/sign-in"
-    }
-  }
+  "shared": {}
 }

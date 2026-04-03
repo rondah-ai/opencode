@@ -166,3 +166,42 @@ Three issues found during analysis, all fixed:
 ### Post-Review Fix (Round 3)
 
 6. **High — normal [d] resolved session promise too early**: Close handler was calling `resolveSession()` + `browser.close()` on normal shutdown, racing with the [d] handler's save/merge work. Fixed: close handler now does `if (normalShutdown) return` with no side effects — [d] handler owns the full lifecycle (saves, browser close, resolveSession).
+
+---
+
+## Production Health Testing
+
+> See `PRODUCTION_HEALTH_EXECUTION_PLAN.md` for full details.
+
+| Phase | Description | Status | Files |
+|-------|-------------|--------|-------|
+| **1** | Health blocks from init | DONE | `qa/model-generator.ts`, `scripts/init.js` |
+| **2** | Landmark enrichment | DONE | `scripts/init.js`, `qa/model-generator.ts` |
+| **3** | Error tracking + triage | DONE | `scripts/run-test.js` |
+| **4** | Regenerate + validate | NOT STARTED | — |
+
+### Phase 1: Health Blocks From Init
+
+- [x] Add `HealthBlock` interface to model-generator.ts
+- [x] Add `health?` to `GeneratedFeature` interface
+- [x] Add `buildHealthBlock()` and `pickInitLandmark()` helpers
+- [x] Generate health blocks for every crawled route (including no-pattern routes)
+- [x] Remove `table_visible` and `has_rows` from `PATTERN_CAPABILITY_MAP` (model-generator.ts)
+- [x] Remove `table_visible` and `has_rows` from inline map (init.js)
+
+### Phase 2: Landmark Enrichment
+
+- [x] Capture `h1`, `h2`, `data-page`, `data-testid` during `scanPage()` crawl in init.js
+- [x] Add `landmarks` to both success and error return paths in `scanPage()`
+- [x] Add `landmarks?` to `PageScanData` interface in model-generator.ts
+- [x] Update `pickInitLandmark()` with full priority: data-page > data-testid > h1 > h2 > title
+
+### Phase 3: Error Tracking + Triage
+
+- [x] Split `consoleErrors` into `consoleErrors` (console.error), `jsErrors` (pageerror), `requestFailures` (requestfailed)
+- [x] Update `runHealthCheck` — `no_js_errors` now detects hydration errors specifically
+- [x] `no_console_errors` now only checks console.error() calls
+- [x] Add `no_request_failures` check type — fails on fetch/xhr failures, ignores static assets
+- [x] Add `category` field to check results (hydration_error, runtime_error, console_error, request_failure)
+- [x] Update `runCheck`/`runStaticCheck` — `no_errors` combines both arrays for backward compat
+- [x] Add category summary to console output and summary.json

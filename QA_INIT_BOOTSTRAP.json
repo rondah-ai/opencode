@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "baseUrl": "http://localhost:3000",
+  "createdAt": "2026-04-03T11:36:05.103Z",
+  "finalUrl": "http://localhost:3000/home/call-logs",
+  "finalRoute": "/home/call-logs",
+  "finalLandmark": {
+    "type": "landmark_visible",
+    "selector": "title",
+    "text": "Rondah AI Console"
+  },
+  "steps": [
+    {
+      "type": "click",
+      "selector": "input[aria-label=\"Email Address\"]"
+    },
+    {
+      "type": "input",
+      "selector": "input[aria-label=\"Email Address\"]",
+      "value": "$EMAIL",
+      "field": "Enter your email"
+    },
+    {
+      "type": "click",
+      "selector": "input[aria-label=\"Password\"]"
+    },
+    {
+      "type": "input",
+      "selector": "input[aria-label=\"Password\"]",
+      "value": "$PASSWORD",
+      "field": "Enter your password"
+    },
+    {
+      "type": "click",
+      "selector": "button[type=\"submit\"]",
+      "text": "Log In"
+    },
+    {
+      "type": "navigation",
+      "url": "http://localhost:3000/home/call-logs"
+    },
+    {
+      "type": "click",
+      "selector": "button[type=\"submit\"]",
+      "text": "Maybe Later"
+    },
+    {
+      "type": "click",
+      "selector": "button[aria-label=\"Select a practice\"]",
+      "text": "Select practice"
+    },
+    {
+      "type": "click",
+      "selector": "[data-value=\"Dentrix Test Practice pracDentrix\"]",
+      "text": "Dentrix Test Practice"
+    }
+  ]
+}
