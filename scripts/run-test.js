@@ -495,66 +495,132 @@ async function main() {
   const failed = results.filter((r) => r.status === "failed").length
   const skipped = results.filter((r) => r.status === "skipped").length
 
-  console.log("=".repeat(60))
-  console.log("  Test Results")
-  console.log("=".repeat(60))
-  console.log(`  Total:    ${results.length}`)
-  console.log(`  Passed:   ${passed}`)
-  console.log(`  Failed:   ${failed}`)
-  console.log(`  Skipped:  ${skipped}`)
-  console.log(`  Duration: ${(totalDuration / 1000).toFixed(1)}s`)
-  if (skippedInitCount > 0) {
-    console.log(`  Note:     ${skippedInitCount} unlearned init/migrated capabilities were skipped`)
-  }
-  console.log("")
-
-  if (failed > 0) {
-    console.log("  Failed capabilities:")
-    for (const r of results.filter((r) => r.status === "failed")) {
-      console.log(`    - ${r.feature}.${r.capability}: ${r.error || r.checks.filter((c) => !c.passed).map((c) => c.detail).join("; ")}`)
-    }
-    console.log("")
-  }
-
-  console.log("=".repeat(60))
-
-  // ── Save Results ───────────────────────────────────────────────────────────
-
   // Collect failure categories for triage
   const categories = {}
+  const failuresByCategory = {}
   for (const r of results) {
     for (const c of r.checks || []) {
-      if (c.category) categories[c.category] = (categories[c.category] || 0) + 1
+      if (c.category) {
+        categories[c.category] = (categories[c.category] || 0) + 1
+        if (!failuresByCategory[c.category]) failuresByCategory[c.category] = []
+        failuresByCategory[c.category].push({ feature: r.feature, capability: r.capability, route: r.route, detail: c.detail })
+      }
     }
   }
+
+  const passRate = results.length > 0 ? ((passed / (results.length - skipped)) * 100).toFixed(0) : "0"
+  const statusLabel = failed === 0 ? "HEALTHY" : "DEGRADED"
+  const statusIcon = failed === 0 ? "PASS" : "FAIL"
+
+  console.log("")
+  console.log("=".repeat(70))
+  console.log(`  PRODUCTION HEALTH REPORT  |  ${statusIcon}: ${statusLabel}`)
+  console.log("=".repeat(70))
+  console.log("")
+  console.log(`  Suite:      ${config.suite}`)
+  console.log(`  Target:     ${config.url}`)
+  console.log(`  Duration:   ${(totalDuration / 1000).toFixed(1)}s`)
+  console.log(`  Timestamp:  ${new Date().toISOString()}`)
+  console.log("")
+  console.log("-".repeat(70))
+  console.log(`  RESULTS`)
+  console.log("-".repeat(70))
+  console.log(`  Total:      ${results.length} routes`)
+  console.log(`  Passed:     ${passed}`)
+  console.log(`  Failed:     ${failed}`)
+  console.log(`  Skipped:    ${skipped}`)
+  console.log(`  Pass Rate:  ${passRate}%`)
+  if (skippedInitCount > 0) {
+    console.log(`  Note:       ${skippedInitCount} unlearned capabilities skipped (run learn to enable)`)
+  }
+
+  // Route-by-route summary
+  console.log("")
+  console.log("-".repeat(70))
+  console.log("  ROUTE HEALTH")
+  console.log("-".repeat(70))
+  for (const r of results) {
+    if (r.status === "skipped") continue
+    const icon = r.status === "passed" ? "PASS" : "FAIL"
+    const checksStr = r.checks ? `${r.checks.filter(c => c.passed).length}/${r.checks.length} checks` : ""
+    const route = r.route || ""
+    const pad = " ".repeat(Math.max(1, 40 - route.length))
+    console.log(`  ${icon}  ${route}${pad}${checksStr}`)
+  }
+
+  // Failures grouped by category
+  if (failed > 0) {
+    console.log("")
+    console.log("-".repeat(70))
+    console.log("  FAILURES BY TYPE")
+    console.log("-".repeat(70))
+
+    const categoryLabels = {
+      hydration_error: "Hydration Errors (SSR mismatch)",
+      runtime_error: "Runtime Errors (uncaught exceptions)",
+      console_error: "Console Errors (console.error / network)",
+      request_failure: "Request Failures (API / fetch)",
+    }
+
+    for (const [cat, items] of Object.entries(failuresByCategory)) {
+      const label = categoryLabels[cat] || cat
+      console.log("")
+      console.log(`  ${label} (${items.length}):`)
+      for (const item of items) {
+        // Truncate detail for readability
+        const detail = item.detail.length > 120 ? item.detail.slice(0, 120) + "..." : item.detail
+        console.log(`    ${item.route}`)
+        console.log(`      ${detail}`)
+      }
+    }
+
+    // Uncategorized failures (no category field — e.g., landmark failures, url_is)
+    const uncategorized = results.filter(r => r.status === "failed").filter(r => {
+      const failedChecks = (r.checks || []).filter(c => !c.passed)
+      return failedChecks.some(c => !c.category)
+    })
+    if (uncategorized.length > 0) {
+      console.log("")
+      console.log(`  Other Failures (${uncategorized.length}):`)
+      for (const r of uncategorized) {
+        const failedChecks = (r.checks || []).filter(c => !c.passed && !c.category)
+        for (const c of failedChecks) {
+          console.log(`    ${r.route}`)
+          console.log(`      [${c.type}] ${c.detail}`)
+        }
+      }
+    }
+  }
+
+  console.log("")
+  console.log("=".repeat(70))
+
+  // ── Save Results ───────────────────────────────────────────────────────────
 
   const summary = {
     suite: config.suite,
     url: config.url,
     model: config.modelPath,
     modelVersion: model.version,
+    status: statusLabel,
     startTime: new Date(startTime).toISOString(),
     endTime: new Date().toISOString(),
     duration: totalDuration,
     results,
-    summary: { total: results.length, passed, failed, skipped },
+    summary: { total: results.length, passed, failed, skipped, passRate: `${passRate}%` },
     categories,
   }
 
   fs.writeFileSync(path.join(config.outputDir, "summary.json"), JSON.stringify(summary, null, 2))
   generateHtmlReport(summary, config.outputDir)
 
-  console.log(`\nResults: ${config.outputDir}/summary.json`)
-  console.log(`Report:  ${config.outputDir}/report.html`)
+  console.log(`  Reports:    ${config.outputDir}/summary.json`)
+  console.log(`              ${config.outputDir}/report.html`)
+  console.log("=".repeat(70))
 
-  if (Object.keys(categories).length > 0) {
-    console.log(`\nFailure categories:`)
-    for (const [cat, count] of Object.entries(categories)) {
-      console.log(`  ${cat}: ${count}`)
-    }
-  }
-
-  process.exit(failed > 0 ? 1 : 0)
+  // Force exit — event listeners on the page can keep Node alive
+  const exitCode = failed > 0 ? 1 : 0
+  setTimeout(() => process.exit(exitCode), 100)
 }
 
 // ─── Authentication ──────────────────────────────────────────────────────────
