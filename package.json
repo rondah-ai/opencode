@@ -1,6 +1,6 @@
 {
   "name": "@rondah-ai/rondar",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Automated QA testing agent with blueprint-based testing",
   "main": "index.js",
   "bin": {
@@ -28,7 +28,8 @@
     "url": "https://github.com/rondah-ai/opencode"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "dependencies": {
     "playwright": "^1.57.0",
