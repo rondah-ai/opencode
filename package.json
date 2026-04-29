@@ -27,6 +27,17 @@
     "type": "git",
     "url": "https://github.com/rondah-ai/opencode"
   },
+  "files": [
+    "index.js",
+    "bin/",
+    "scripts/",
+    "lib/",
+    "qa/",
+    "browser/",
+    "hybrid/",
+    "tools/",
+    "README.md"
+  ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
     "access": "public"
