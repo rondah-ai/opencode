@@ -535,3 +535,7 @@ jobs:
 | `TEST_PASSWORD` | Test account password |
 
 Credentials are auto-parameterized as `$EMAIL`/`$PASSWORD` in recorded flows so they work across environments.
+
+
+
+NPM_TOKEN=your_new_token npm publish --access public
