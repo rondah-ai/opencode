@@ -1,6 +1,6 @@
 {
   "name": "@rondah-ai/rondar",
-  "version": "2.9.0",
+  "version": "2.10.0",
   "description": "Automated QA testing agent with blueprint-based testing",
   "main": "index.js",
   "bin": {
