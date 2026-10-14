@@ -1,6 +1,6 @@
 {
   "name": "@rondah-ai/rondar",
-  "version": "2.10.1",
+  "version": "2.10.1-pms.13",
   "description": "Automated QA testing agent with blueprint-based testing",
   "main": "index.js",
   "bin": {
@@ -13,7 +13,8 @@
     "test:smoke": "node scripts/run-test.js --suite smoke",
     "test:full": "node scripts/run-test.js --suite full",
     "e2e": "node scripts/run-e2e.js",
-    "e2e:heal": "node scripts/run-e2e.js --heal"
+    "e2e:heal": "node scripts/run-e2e.js --heal",
+    "test:task": "node --test task/test/*.test.js"
   },
   "keywords": [
     "qa",
@@ -32,12 +33,21 @@
     "access": "public"
   },
   "dependencies": {
-    "playwright": "^1.57.0",
-    "zod": "^4.1.8",
-    "@anthropic-ai/sdk": "^0.20.0"
+    "@anthropic-ai/sdk": "^0.20.0",
+    "playwright": "1.61.1",
+    "zod": "^4.1.8"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "exports": {
+    ".": "./index.js",
+    "./task": {
+      "types": "./task/index.d.ts",
+      "require": "./task/index.js",
+      "import": "./task/index.js"
+    },
+    "./*": "./*"
+  }
 }
